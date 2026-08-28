@@ -293,9 +293,9 @@ function showCountPanel(name) {
 
 function openCountDialog() {
   const { followers, following } = state.results.totals;
-  dom.countCounts.textContent =
-    `Counted from your export file: ${followers.toLocaleString()} followers, ` +
-    `${following.toLocaleString()} following.`;
+  // dom.countCounts.textContent =
+  //   `Counted from your export file: ${followers.toLocaleString()} followers, ` +
+  //   `${following.toLocaleString()} following.`;
   dom.countQuestion.textContent =
     `Is the following count on your profile different from ${following.toLocaleString()}?`;
 
