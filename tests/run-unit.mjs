@@ -1,4 +1,5 @@
-import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import { loadPlaywright, chromiumLaunchOptions } from './browser.mjs';
+const { chromium } = await loadPlaywright();
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
@@ -18,7 +19,7 @@ const server = createServer(async (req, res) => {
 await new Promise((r) => server.listen(0, r));
 const port = server.address().port;
 
-const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+const browser = await chromium.launch(chromiumLaunchOptions());
 const page = await browser.newPage();
 const consoleErrors = [];
 page.on('pageerror', (e) => consoleErrors.push(String(e)));

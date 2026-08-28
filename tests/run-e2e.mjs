@@ -5,7 +5,8 @@
  * is that your data never leaves your device, so that claim gets an assertion
  * rather than a paragraph.
  */
-import { chromium, devices } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import { loadPlaywright, chromiumLaunchOptions } from './browser.mjs';
+const { chromium, devices } = await loadPlaywright();
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
@@ -36,9 +37,7 @@ const equal = (label, actual, expected) =>
         `expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
 const group = (name) => console.log(`\n${name}`);
 
-const browser = await chromium.launch({
-  executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
-});
+const browser = await chromium.launch(chromiumLaunchOptions());
 
 /* ============================================================ */
 group('Mobile layout — iPhone SE (375×667)');
