@@ -67,12 +67,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # enablement: true turns Pages on via the API on the first run, so the
-      # only manual setup left is choosing the source in repo settings - and
-      # not even that, since a workflow-built artifact implies it.
+      # Deliberately without `enablement: true`. Creating a Pages site through
+      # the API needs repository administration rights, which GITHUB_TOKEN
+      # cannot be granted through the permissions block at any setting, so that
+      # option always fails with "Resource not accessible by integration" and
+      # only obscures the real error. Pages must be switched on once by hand -
+      # see the README. Once it exists, this step just reads its config.
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       # There is no build step - the site is plain HTML, CSS and ES modules.
       # Staged into a clean directory so the test harness and CI config aren't

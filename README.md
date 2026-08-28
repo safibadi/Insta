@@ -162,7 +162,17 @@ network.
 This repo is set up for **GitHub Pages**. Push to `main` and the workflow in
 `.github/workflows/pages.yml` runs the tests and publishes.
 
-One-time setup: repo **Settings → Pages → Source: GitHub Actions**.
+**One-time setup, and it must be done by hand first:** repo **Settings → Pages
+→ Source: GitHub Actions**.
+
+There is no way to automate this step. Creating a Pages site through the API
+needs repository *administration* permission, which a workflow's `GITHUB_TOKEN`
+cannot be granted at any `permissions:` setting — `configure-pages` with
+`enablement: true` fails with `Resource not accessible by integration`
+regardless. Until that dropdown is set, every deploy fails at the first step.
+
+Note also that Pages will not serve a **private** repo on a free account; that
+needs GitHub Pro. Public repos are unrestricted.
 
 Your site: `https://<your-username>.github.io/<repo>/`
 
