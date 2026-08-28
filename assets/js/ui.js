@@ -92,21 +92,21 @@ export function renderSteps(container, deviceKey) {
 
   container.append(listFrom(device.deliverySteps, device.requestSteps.length + 2));
 
-  const shortcut = document.createElement('a');
-  shortcut.className = 'btn btn--ghost link-btn';
-  shortcut.href = DYI_URL;
-  shortcut.target = '_blank';
-  shortcut.rel = 'noopener noreferrer';
-  shortcut.textContent = 'Open Instagram’s download page ↗';
-  container.append(shortcut);
+  // const shortcut = document.createElement('a');
+  // shortcut.className = 'btn btn--ghost link-btn';
+  // shortcut.href = DYI_URL;
+  // shortcut.target = '_blank';
+  // shortcut.rel = 'noopener noreferrer';
+  // shortcut.textContent = 'Open Instagram’s download page ↗';
+  // container.append(shortcut);
 
-  const shortcutNote = document.createElement('p');
-  shortcutNote.className = 'muted';
-  shortcutNote.style.fontSize = '.85rem';
-  shortcutNote.textContent =
-    'That link jumps straight to the download screen. If it asks you to sign in ' +
-    'or opens the app somewhere else, use the steps above instead.';
-  container.append(shortcutNote);
+  // const shortcutNote = document.createElement('p');
+  // shortcutNote.className = 'muted';
+  // shortcutNote.style.fontSize = '.85rem';
+  // shortcutNote.textContent =
+  //   'That link jumps straight to the download screen. If it asks you to sign in ' +
+  //   'or opens the app somewhere else, use the steps above instead.';
+  // container.append(shortcutNote);
 
   container.append(groupTitle('Then bring it here'));
   container.append(listFrom(device.retrieveSteps, 1));
