@@ -1,0 +1,556 @@
+/* ---------------------------------------------------------------
+   Design tokens. Light is the base; dark overrides only the colours
+   so there is exactly one place each value is defined.
+   --------------------------------------------------------------- */
+:root {
+  --bg: #ffffff;
+  --bg-raised: #f6f7f9;
+  --bg-sunken: #eef0f4;
+  --text: #14161a;
+  --text-muted: #5c6370;
+  --border: #dfe3ea;
+  --accent: #c1358a;
+  --accent-strong: #9e2570;
+  --accent-contrast: #ffffff;
+  --accent-soft: #fdeef7;
+  --danger: #b3261e;
+  --ok: #1a7f4b;
+  --warn-bg: #fff6e5;
+  --warn-border: #f0c66b;
+  --warn-text: #6b4a05;
+
+  --radius: 14px;
+  --radius-sm: 9px;
+  --tap: 44px; /* minimum comfortable touch target */
+  --wrap: 640px;
+  --shadow: 0 1px 2px rgba(20, 22, 26, .06), 0 8px 24px rgba(20, 22, 26, .06);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #101216;
+    --bg-raised: #191c22;
+    --bg-sunken: #21252d;
+    --text: #f2f4f7;
+    --text-muted: #a2abba;
+    --border: #2c313b;
+    --accent: #f083c0;
+    --accent-strong: #f7a8d4;
+    --accent-contrast: #1a0d15;
+    --accent-soft: #2a1a24;
+    --danger: #f2938c;
+    --ok: #6edaa2;
+    --warn-bg: #2e2411;
+    --warn-border: #6b551f;
+    --warn-text: #f2d69a;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .35);
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--text);
+  background: var(--bg);
+  overflow-wrap: break-word;
+}
+
+h1, h2, h3 { line-height: 1.2; margin: 0 0 .5rem; }
+p { margin: 0 0 1rem; }
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: .88em;
+  background: var(--bg-sunken);
+  padding: .1em .35em;
+  border-radius: 5px;
+}
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+.skip-link {
+  position: absolute; left: -9999px; top: 0;
+  background: var(--accent); color: var(--accent-contrast);
+  padding: .6rem 1rem; z-index: 10;
+}
+.skip-link:focus { left: 0; }
+
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Headings are focused programmatically on screen change so assistive tech
+   announces the new screen. They aren't interactive, so no ring. */
+h1[tabindex="-1"]:focus,
+h2[tabindex="-1"]:focus,
+h1[tabindex="-1"]:focus-visible,
+h2[tabindex="-1"]:focus-visible { outline: none; }
+
+/* ---------------------------------------------------------------
+   Screens
+   --------------------------------------------------------------- */
+.screen[hidden] { display: none; }
+
+.wrap {
+  max-width: var(--wrap);
+  margin: 0 auto;
+  padding: 0 clamp(1rem, 4vw, 1.5rem) 3rem;
+}
+
+/* The landing screen is sized to fit one viewport without scrolling.
+   `dvh` rather than `vh` so the mobile browser's collapsing address bar
+   doesn't push content out of view. On very short or landscape screens it
+   degrades to scrolling rather than clipping anything. */
+.screen--hero {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(1rem, env(safe-area-inset-top))
+           clamp(1rem, 5vw, 1.5rem)
+           max(1rem, env(safe-area-inset-bottom));
+}
+
+.hero {
+  max-width: 30rem;
+  width: 100%;
+  text-align: center;
+}
+
+.hero__eyebrow {
+  margin: 0 0 .4rem;
+  font-size: .8rem;
+  font-weight: 600;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.hero__title {
+  font-size: clamp(1.8rem, 8vw, 2.6rem);
+  letter-spacing: -.02em;
+  margin-bottom: .6rem;
+}
+
+.hero__lede {
+  font-size: clamp(.98rem, 3.6vw, 1.08rem);
+  color: var(--text-muted);
+  margin-bottom: 1.25rem;
+}
+
+.badges {
+  list-style: none;
+  margin: 0 0 1.4rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  align-items: center;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  font-size: .9rem;
+  font-weight: 500;
+  background: var(--accent-soft);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: .35rem .85rem;
+}
+
+.how-strip {
+  list-style: none;
+  display: flex;
+  justify-content: center;
+  gap: clamp(.5rem, 3vw, 1.25rem);
+  margin: 1.4rem 0 1rem;
+  padding: 0;
+  font-size: .8rem;
+  color: var(--text-muted);
+}
+.how-strip li { display: flex; align-items: center; gap: .35rem; }
+.how-strip__num {
+  display: grid;
+  place-items: center;
+  width: 1.35rem; height: 1.35rem;
+  border-radius: 50%;
+  background: var(--bg-sunken);
+  font-weight: 700;
+  font-size: .72rem;
+  color: var(--text);
+}
+
+.hero__proof {
+  font-size: .82rem;
+  color: var(--text-muted);
+  margin: 0;
+  font-style: italic;
+}
+
+/* ---------------------------------------------------------------
+   Top bar
+   --------------------------------------------------------------- */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: max(.5rem, env(safe-area-inset-top)) clamp(.5rem, 3vw, 1rem) .5rem;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+.topbar__step {
+  margin: 0;
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.topbar #start-over { margin-left: auto; }
+
+/* ---------------------------------------------------------------
+   Buttons and inputs
+   --------------------------------------------------------------- */
+.btn {
+  font: inherit;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  padding: .6rem 1rem;
+  min-height: var(--tap);
+  cursor: pointer;
+  background: var(--bg-raised);
+  color: var(--text);
+  transition: filter .15s ease, background-color .15s ease;
+}
+.btn:hover { filter: brightness(.97); }
+@media (prefers-color-scheme: dark) { .btn:hover { filter: brightness(1.15); } }
+.btn:active { transform: translateY(1px); }
+
+.btn--primary {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border-color: var(--accent);
+}
+.btn--ghost { background: transparent; border-color: var(--border); }
+.btn--danger { color: var(--danger); }
+.btn--lg { font-size: 1.05rem; padding: .85rem 1.6rem; min-height: 52px; }
+.btn--block { width: 100%; }
+.btn--small { min-height: 38px; padding: .35rem .7rem; font-size: .85rem; }
+.btn--back {
+  min-width: var(--tap);
+  padding: .4rem .7rem;
+  font-size: 1.2rem;
+  line-height: 1;
+  border-color: transparent;
+}
+
+.input {
+  font: inherit;
+  width: 100%;
+  padding: .6rem .75rem;
+  min-height: var(--tap);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+}
+.input--select { width: auto; flex: 0 0 auto; }
+
+/* ---------------------------------------------------------------
+   Instructions
+   --------------------------------------------------------------- */
+.device-toggle {
+  display: flex;
+  gap: .25rem;
+  background: var(--bg-sunken);
+  padding: .25rem;
+  border-radius: var(--radius);
+  margin: 1rem 0 1.25rem;
+}
+.device-toggle__btn {
+  flex: 1;
+  font: inherit;
+  font-weight: 600;
+  font-size: .92rem;
+  min-height: var(--tap);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.device-toggle__btn[aria-selected="true"] {
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+.steps { margin: 0 0 1.5rem; padding-left: 1.4rem; }
+.steps li { margin-bottom: .7rem; }
+.steps b { font-weight: 650; }
+
+.steps-group__title {
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 1.5rem 0 .6rem;
+}
+
+.callout {
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-border);
+  color: var(--warn-text);
+  border-radius: var(--radius);
+  padding: .8rem 1rem;
+  margin: .6rem 0 1rem;
+  font-size: .9rem;
+}
+.callout p:last-child { margin-bottom: 0; }
+.callout__title { font-weight: 700; margin-bottom: .25rem; }
+
+.link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  margin-bottom: 1.25rem;
+  text-decoration: none;
+}
+
+/* ---------------------------------------------------------------
+   Upload
+   --------------------------------------------------------------- */
+.privacy-bar {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  background: var(--accent-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: .7rem .9rem;
+  font-size: .9rem;
+  font-weight: 500;
+}
+
+.dropzone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  padding: 2rem 1.25rem;
+  text-align: center;
+  transition: border-color .15s ease, background-color .15s ease;
+}
+.dropzone.is-dragover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.dropzone__icon { font-size: 2.4rem; margin: 0 0 .5rem; }
+.dropzone__title { font-weight: 700; font-size: 1.05rem; margin-bottom: .25rem; }
+.dropzone__hint { color: var(--text-muted); font-size: .88rem; margin-bottom: 1.1rem; }
+.dropzone .btn + .btn { margin-top: .5rem; }
+
+.status { margin-top: 1rem; font-size: .92rem; }
+.status--error { color: var(--danger); font-weight: 600; }
+.status--busy { color: var(--text-muted); }
+
+.faq {
+  margin-top: 2rem;
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+  font-size: .9rem;
+  color: var(--text-muted);
+}
+.faq summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text);
+  min-height: var(--tap);
+  display: flex;
+  align-items: center;
+}
+.faq p { margin-top: .75rem; }
+
+/* ---------------------------------------------------------------
+   Results
+   --------------------------------------------------------------- */
+.notices:empty { display: none; }
+.notice {
+  border-radius: var(--radius);
+  padding: .75rem 1rem;
+  margin: 1rem 0;
+  font-size: .9rem;
+  border: 1px solid var(--warn-border);
+  background: var(--warn-bg);
+  color: var(--warn-text);
+}
+.notice--error { border-color: var(--danger); color: var(--danger); background: transparent; }
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: .6rem;
+  margin: 1rem 0 1.5rem;
+}
+/* The answer people came for gets a row to itself. */
+.stat--headline { grid-column: 1 / -1; }
+.stat {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: .8rem .6rem;
+  text-align: center;
+}
+.stat__value { font-size: 1.5rem; font-weight: 700; line-height: 1.1; }
+.stat__label { font-size: .76rem; color: var(--text-muted); }
+.stat--headline { background: var(--accent-soft); border-color: var(--accent); }
+.stat--headline .stat__value { color: var(--accent-strong); }
+
+.tabs {
+  display: flex;
+  gap: .4rem;
+  overflow-x: auto;
+  padding-bottom: .5rem;
+  margin-bottom: 1rem;
+  scrollbar-width: thin;
+}
+.tab {
+  font: inherit;
+  font-weight: 600;
+  font-size: .88rem;
+  white-space: nowrap;
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: .4rem .85rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.tab[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+}
+.tab__count { opacity: .75; margin-left: .3rem; font-variant-numeric: tabular-nums; }
+
+.controls { display: flex; gap: .5rem; margin-bottom: .75rem; }
+.list-actions { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .75rem; }
+.list-meta { font-size: .85rem; color: var(--text-muted); margin-bottom: .5rem; }
+
+.accounts { list-style: none; margin: 0; padding: 0; }
+
+.account {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .6rem .25rem;
+  border-bottom: 1px solid var(--border);
+}
+.account.is-handled { opacity: .45; }
+
+.avatar {
+  flex: 0 0 auto;
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: .95rem;
+  color: #fff;
+  user-select: none;
+}
+
+.account__body { min-width: 0; flex: 1; }
+.account__name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.account__meta {
+  font-size: .76rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account__visit {
+  flex: 0 0 auto;
+  text-decoration: none;
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--accent-strong);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: .45rem .7rem;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.account__check {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  /* Kept at the 44px minimum touch target even though the box drawn is
+     smaller - shrinking this is the one saving not worth making. */
+  width: var(--tap);
+  height: var(--tap);
+  cursor: pointer;
+}
+.account__check input { width: 20px; height: 20px; accent-color: var(--accent); }
+
+.empty {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 2.5rem 1rem;
+}
+
+.sentinel { height: 1px; }
+
+.footer {
+  border-top: 1px solid var(--border);
+  padding: 1.25rem clamp(1rem, 4vw, 1.5rem) max(1.25rem, env(safe-area-inset-bottom));
+  text-align: center;
+  font-size: .8rem;
+  color: var(--text-muted);
+}
+.footer p { margin: 0; }
+
+/* Landing screen owns the whole viewport, so the footer would force a
+   scrollbar. It reappears on every other screen. */
+body:has(.screen--hero:not([hidden])) .footer { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+@media (min-width: 560px) {
+  .summary { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (min-width: 640px) {
+  .badges { flex-direction: row; justify-content: center; flex-wrap: wrap; }
+}

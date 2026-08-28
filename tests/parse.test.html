@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tests — Instagram non-followers</title>
+<link rel="icon" href="data:,">
+<style>
+  body { font: 15px/1.5 system-ui, sans-serif; margin: 2rem; max-width: 60rem; }
+  h1 { font-size: 1.3rem; }
+  .case { padding: .3rem .6rem; border-left: 3px solid transparent; }
+  .pass { color: #1a7f4b; border-color: #1a7f4b; }
+  .fail { color: #b3261e; border-color: #b3261e; background: #fdeceb; font-weight: 600; }
+  .group { margin-top: 1.2rem; font-weight: 700; }
+  #summary { font-size: 1.1rem; font-weight: 700; padding: .8rem; margin-bottom: 1rem; border-radius: 8px; }
+  .ok { background: #e6f5ec; color: #1a7f4b; }
+  .bad { background: #fdeceb; color: #b3261e; }
+  pre { margin: .2rem 0 .2rem 1rem; font-size: .85em; color: #555; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<h1>Instagram non-followers — unit tests</h1>
+<div id="summary">Running…</div>
+<div id="results"></div>
+
+<script type="module">
+import { parseUpload, classifyPath, usernameFromHref } from '../assets/js/parse.js';
+import { analyze, sortRecords, filterRecords, toCsv } from '../assets/js/analyze.js';
+
+const results = document.getElementById('results');
+let passed = 0;
+let failed = 0;
+
+function group(name) {
+  const el = document.createElement('div');
+  el.className = 'group';
+  el.textContent = name;
+  results.append(el);
+}
+
+function check(label, condition, detail) {
+  const el = document.createElement('div');
+  el.className = `case ${condition ? 'pass' : 'fail'}`;
+  el.textContent = `${condition ? '✓' : '✗'} ${label}`;
+  results.append(el);
+  if (condition) {
+    passed++;
+  } else {
+    failed++;
+    if (detail !== undefined) {
+      const pre = document.createElement('pre');
+      pre.textContent = typeof detail === 'string' ? detail : JSON.stringify(detail, null, 2);
+      results.append(pre);
+    }
+  }
+}
+
+function equal(label, actual, expected) {
+  const a = JSON.stringify(actual);
+  const b = JSON.stringify(expected);
+  check(label, a === b, `expected ${b}\n     got ${a}`);
+}
+
+/** Load a fixture off disk and hand it back as a File, exactly as a picker would. */
+async function fixture(path, name) {
+  const response = await fetch(`fixtures/${path}`);
+  if (!response.ok) throw new Error(`fixture missing: ${path}`);
+  const blob = await response.blob();
+  return new File([blob], name || path.split('/').pop());
+}
+
+const names = (records) => records.map((r) => r.username).sort();
+const keys = (records) => records.map((r) => r.key).sort();
+
+/* ============================================================ */
+group('classifyPath — finds the right files anywhere in the tree');
+
+equal('followers_1.json', classifyPath('connections/followers_and_following/followers_1.json'), 'followers');
+equal('followers_2.json (split list)', classifyPath('followers_2.json'), 'followers');
+equal('following.json', classifyPath('a/b/c/following.json'), 'following');
+equal('older flat path still matches', classifyPath('followers_and_following/following.json'), 'following');
+equal('pending_follow_requests.json', classifyPath('pending_follow_requests.json'), 'pending');
+equal('blocked_profiles.json', classifyPath('blocked_profiles.json'), 'blocked');
+equal('HTML variant classifies too', classifyPath('following.html'), 'following');
+equal('unrelated json ignored', classifyPath('ads_information/advertisers.json'), null);
+equal('media ignored', classifyPath('media/posts/photo_001.jpg'), null);
+equal('start_here.html ignored', classifyPath('start_here.html'), null);
+check('"following" does not match the followers pattern',
+  classifyPath('following.json') === 'following' && classifyPath('followers.json') === 'followers');
+
+/* ============================================================ */
+group('usernameFromHref — extracts handles, skips Instagram routes');
+
+equal('plain profile URL', usernameFromHref('https://www.instagram.com/alice'), 'alice');
+equal('trailing slash', usernameFromHref('https://www.instagram.com/alice/'), 'alice');
+equal('query string stripped', usernameFromHref('https://www.instagram.com/alice/?hl=en'), 'alice');
+equal('login route rejected', usernameFromHref('https://www.instagram.com/accounts/login/'), null);
+equal('post route rejected', usernameFromHref('https://www.instagram.com/p/abc123/'), null);
+equal('bare domain rejected', usernameFromHref('https://www.instagram.com/'), null);
+equal('garbage rejected', usernameFromHref('not a url at all'), null);
+equal('relative path rejected', usernameFromHref('/alice'), null);
+equal('a look-alike domain is rejected', usernameFromHref('https://instagram.com.evil.test/alice'), null);
+equal('subdomain accepted', usernameFromHref('https://www.instagram.com/alice'), 'alice');
+
+/* ============================================================ */
+group('JSON parsing — both wrapper shapes, split files, dedupe');
+
+const jsonFiles = await Promise.all([
+  fixture('json/followers_1.json'),
+  fixture('json/followers_2.json'),
+  fixture('json/following.json'),
+  fixture('json/pending_follow_requests.json'),
+]);
+const jsonParsed = await parseUpload(jsonFiles);
+
+equal('followers merged across both files',
+  names(jsonParsed.sets.followers), ['MIXEDCASE', 'alice', 'bob', 'mallory', 'zoe']);
+equal('following read from relationships_following wrapper',
+  jsonParsed.sets.following.length, 7);
+equal('pending requests read from its own wrapper key',
+  names(jsonParsed.sets.pending), ['pending_person']);
+equal('format reported as json', [...jsonParsed.formats], ['json']);
+equal('no errors', jsonParsed.errors, []);
+
+const alice = jsonParsed.sets.followers.find((r) => r.username === 'alice');
+check('timestamps converted from seconds to milliseconds',
+  alice.timestamp === 1700000000 * 1000, alice.timestamp);
+equal('profile URL rebuilt from the username', alice.href, 'https://www.instagram.com/alice/');
+
+const xss = jsonParsed.sets.following.find((r) => r.username.includes('script'));
+check('a markup-shaped username survives parsing as plain text',
+  xss && xss.username === '<script>alert(1)<\/script>', xss);
+check('...and its URL is percent-encoded, so no javascript: sneaks through',
+  xss.href === 'https://www.instagram.com/%3Cscript%3Ealert(1)%3C%2Fscript%3E/', xss.href);
+
+const unicode = jsonParsed.sets.following.find((r) => r.username.startsWith('ü'));
+check('non-ASCII username preserved', unicode && unicode.username === 'ünïcode_user', unicode);
+
+/* ============================================================ */
+group('Analysis — the actual answer');
+
+const analysis = analyze(jsonParsed.sets);
+
+equal("doesn't follow back", names(analysis.notFollowingBack),
+  ['<script>alert(1)<\/script>', 'charlie', 'dave', 'ünïcode_user']);
+equal('fans', names(analysis.fans), ['mallory', 'zoe']);
+equal('mutuals', names(analysis.mutuals), ['MixedCase', 'alice', 'bob']);
+check('MixedCase matched MIXEDCASE — comparison is case-insensitive',
+  analysis.mutuals.some((r) => r.key === 'mixedcase'));
+check('...and that account is therefore NOT in the not-following-back list',
+  !analysis.notFollowingBack.some((r) => r.key === 'mixedcase'));
+equal('totals', analysis.totals, { followers: 5, following: 7 });
+
+/* ============================================================ */
+group('Sorting, filtering, CSV');
+
+const sortedAz = sortRecords(analysis.mutuals, 'username');
+equal('A–Z sort', names(sortedAz), names(analysis.mutuals));
+check('newest-first puts the largest timestamp first', (() => {
+  const sorted = sortRecords(jsonParsed.sets.following, 'newest');
+  return sorted[0].timestamp >= sorted[sorted.length - 1].timestamp;
+})());
+equal('filter is case-insensitive substring',
+  names(filterRecords(jsonParsed.sets.followers, 'AL')), ['alice', 'mallory']);
+equal('filter narrows correctly',
+  names(filterRecords(jsonParsed.sets.followers, 'ALI')), ['alice']);
+equal('empty filter returns everything',
+  filterRecords(jsonParsed.sets.followers, '   ').length, 5);
+
+const csv = toCsv([{ username: 'a"b', href: 'https://x/', timestamp: null, dateText: 'Mar 1, 2024' }]);
+check('CSV escapes embedded quotes by doubling them', csv.includes('"a""b"'), csv);
+check('CSV has a header row', csv.startsWith('username,profile_url,followed_on'), csv);
+
+/* ============================================================ */
+group('HTML export — fully supported, dates degrade gracefully');
+
+const htmlParsed = await parseUpload(await Promise.all([
+  fixture('html/followers_1.html'),
+  fixture('html/following.html'),
+]));
+
+equal('followers extracted from HTML',
+  names(htmlParsed.sets.followers), ['MIXEDCASE', 'alice', 'bob', 'mallory', 'zoe']);
+equal('following extracted from HTML', htmlParsed.sets.following.length, 7);
+equal('format reported as html', [...htmlParsed.formats], ['html']);
+check('navigation links are not mistaken for accounts',
+  !names(htmlParsed.sets.followers).includes('Instagram'), names(htmlParsed.sets.followers));
+check('the login link is not mistaken for an account',
+  !htmlParsed.sets.followers.some((r) => r.key === 'accounts'));
+
+const htmlAlice = htmlParsed.sets.followers.find((r) => r.username === 'alice');
+check('HTML records carry no fabricated timestamp', htmlAlice.timestamp === null, htmlAlice);
+check('...but do keep the human-readable date string',
+  typeof htmlAlice.dateText === 'string' && /2024/.test(htmlAlice.dateText), htmlAlice.dateText);
+
+const htmlAnalysis = analyze(htmlParsed.sets);
+equal('HTML gives the identical answer to JSON',
+  names(htmlAnalysis.notFollowingBack), names(analysis.notFollowingBack));
+
+/* ============================================================ */
+group('ZIP archives');
+
+const smallZip = await parseUpload([await fixture('export-small.zip')]);
+equal('small export: followers', names(smallZip.sets.followers).length, 5);
+equal('small export: following', smallZip.sets.following.length, 7);
+equal('small export: no errors', smallZip.errors, []);
+equal('small export gives the same answer',
+  names(analyze(smallZip.sets).notFollowingBack), names(analysis.notFollowingBack));
+
+const fullZip = await parseUpload([await fixture('export-full.zip')]);
+equal('full export: still finds the right files among 140+ others',
+  names(analyze(fullZip.sets).notFollowingBack), names(analysis.notFollowingBack));
+equal('full export: only the 4 relevant entries were read', fullZip.filesScanned, 4);
+equal('full export: no errors from the media files', fullZip.errors, []);
+
+const htmlZip = await parseUpload([await fixture('export-html.zip')]);
+equal('html export archive works too',
+  names(analyze(htmlZip.sets).notFollowingBack), names(analysis.notFollowingBack));
+
+const broken = await parseUpload([await fixture('not-a-zip.zip')]);
+check('a corrupt ZIP produces a readable error, not a crash',
+  broken.errors.length === 1 && /valid ZIP/i.test(broken.errors[0]), broken.errors);
+equal('...and yields no accounts', broken.sets.followers.length, 0);
+
+/* ============================================================ */
+group('Edge cases');
+
+const emptyFollowers = await parseUpload(await Promise.all([
+  fixture('edge/followers_1.json', 'followers_1.json'),
+  fixture('edge/following.json', 'following.json'),
+]));
+const emptyAnalysis = analyze(emptyFollowers.sets);
+equal('an account with zero followers: everyone is a non-follower',
+  names(emptyAnalysis.notFollowingBack), ['solo']);
+equal('...and there are no mutuals', emptyAnalysis.mutuals.length, 0);
+check('...and the empty file is reported as a warning',
+  emptyFollowers.warnings.some((w) => /followers_1/.test(w)), emptyFollowers.warnings);
+
+const renamed = await parseUpload([
+  await fixture('edge/renamed_following.json', 'following.json'),
+]);
+equal('an unknown relationships_* wrapper key still parses',
+  names(renamed.sets.following), ['renamed_ok']);
+
+const nothing = await parseUpload([]);
+equal('no files at all is handled', nothing.sets.followers.length, 0);
+
+const irrelevant = await parseUpload([
+  new File(['{}'], 'personal_information.json'),
+  new File(['binary'], 'photo.jpg'),
+]);
+equal('irrelevant files are silently ignored', irrelevant.matchedFiles, []);
+
+/* ============================================================ */
+const summary = document.getElementById('summary');
+summary.className = failed === 0 ? 'ok' : 'bad';
+summary.textContent = failed === 0
+  ? `All ${passed} tests passed.`
+  : `${failed} failed, ${passed} passed.`;
+
+window.__testResults = { passed, failed };
+</script>
+</body>
+</html>

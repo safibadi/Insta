@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+<!--
+  This policy is the privacy promise, enforced by the browser rather than
+  asserted in a paragraph nobody reads.
+
+  `connect-src 'none'` means this page cannot make a fetch, XHR, WebSocket or
+  beacon request to anywhere - not to us, not to anyone. Even if a bug or a
+  malicious contribution tried to upload your data, the browser would refuse.
+  Everything loads from 'self', so there is no third-party code either.
+-->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'none';
+  script-src 'self';
+  style-src 'self';
+  img-src 'self' data:;
+  font-src 'self';
+  connect-src 'none';
+  form-action 'none';
+  base-uri 'none'">
+
+<meta name="referrer" content="no-referrer">
+<title>Who doesn't follow you back on Instagram</title>
+<meta name="description" content="Find out who you follow on Instagram that doesn't follow you back. Runs entirely in your browser - no login, no upload, no sign-up.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%91%80%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<a class="skip-link" href="#main">Skip to content</a>
+
+<main id="main">
+
+  <!-- ==================== Screen 0: landing ==================== -->
+  <section class="screen screen--hero" data-screen="home" aria-labelledby="hero-title">
+    <div class="hero">
+      <p class="hero__eyebrow">Instagram won't tell you this</p>
+      <h1 class="hero__title" id="hero-title">Who doesn't follow you back?</h1>
+      <p class="hero__lede">
+        Upload your Instagram data export and see exactly which accounts you
+        follow that don't follow you.
+      </p>
+
+      <ul class="badges" aria-label="Why this is safe">
+        <li class="badge"><span aria-hidden="true">🔒</span> Runs 100% on your device</li>
+        <li class="badge"><span aria-hidden="true">🚫</span> No login, no password</li>
+        <li class="badge"><span aria-hidden="true">✨</span> Free, no sign-up</li>
+      </ul>
+
+      <button class="btn btn--primary btn--lg" type="button" data-go="how">
+        Get started
+      </button>
+
+      <ol class="how-strip" aria-label="How it works">
+        <li><span class="how-strip__num">1</span> Export from Instagram</li>
+        <li><span class="how-strip__num">2</span> Upload it here</li>
+        <li><span class="how-strip__num">3</span> See the list</li>
+      </ol>
+
+      <p class="hero__proof">
+        Don't take our word for it — turn on airplane mode before you upload.
+        It still works.
+      </p>
+    </div>
+  </section>
+
+  <!-- ==================== Screen 1: get the file ==================== -->
+  <section class="screen" data-screen="how" aria-labelledby="how-title" hidden>
+    <header class="topbar">
+      <button class="btn btn--ghost btn--back" type="button" data-go="home" aria-label="Back">←</button>
+      <p class="topbar__step">Step 1 of 2</p>
+    </header>
+
+    <div class="wrap">
+      <h2 id="how-title">Get your file from Instagram</h2>
+      <p class="muted">
+        Instagram lets you download your own data. It's free and takes a couple
+        of minutes to request.
+      </p>
+
+      <div class="device-toggle" role="tablist" aria-label="Choose your device">
+        <button class="device-toggle__btn" role="tab" type="button" data-device="android">Android</button>
+        <button class="device-toggle__btn" role="tab" type="button" data-device="ios">iPhone</button>
+        <button class="device-toggle__btn" role="tab" type="button" data-device="desktop">Computer</button>
+      </div>
+
+      <div id="steps-content" class="steps-content" role="tabpanel" aria-label="Export steps"></div>
+
+      <button class="btn btn--primary btn--lg btn--block" type="button" data-go="upload">
+        I have my file
+      </button>
+    </div>
+  </section>
+
+  <!-- ==================== Screen 2: upload ==================== -->
+  <section class="screen" data-screen="upload" aria-labelledby="upload-title" hidden>
+    <header class="topbar">
+      <button class="btn btn--ghost btn--back" type="button" data-go="how" aria-label="Back">←</button>
+      <p class="topbar__step">Step 2 of 2</p>
+    </header>
+
+    <div class="wrap">
+      <h2 id="upload-title">Upload your export</h2>
+
+      <p class="privacy-bar">
+        <span aria-hidden="true">🔒</span>
+        Your file is read inside this browser tab. Nothing is sent anywhere.
+      </p>
+
+      <div class="dropzone" id="dropzone">
+        <p class="dropzone__icon" aria-hidden="true">📂</p>
+        <p class="dropzone__title">Choose your file</p>
+        <p class="dropzone__hint">
+          The <code>.zip</code> from Instagram — or the <code>.json</code>
+          / <code>.html</code> files inside it
+        </p>
+        <button class="btn btn--primary" type="button" id="pick-file">Choose file</button>
+        <button class="btn btn--ghost" type="button" id="pick-folder" hidden>Choose folder instead</button>
+      </div>
+
+      <input type="file" id="file-input" accept=".zip,.json,.html,.htm,application/zip,application/json,text/html" multiple hidden>
+      <input type="file" id="folder-input" webkitdirectory directory multiple hidden>
+
+      <div id="upload-status" class="status" role="status" aria-live="polite"></div>
+
+      <details class="faq">
+        <summary>How do I know nothing is uploaded?</summary>
+        <p>
+          This page sets a Content Security Policy of
+          <code>connect-src 'none'</code>, which tells your browser to block
+          every outgoing network request from this page. It isn't a setting we
+          can quietly turn off at runtime — your browser enforces it. The whole
+          source is public, so you can read it yourself.
+        </p>
+        <p>
+          The simplest proof: disconnect from the internet, then upload your
+          file. Everything still works.
+        </p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ==================== Screen 3: results ==================== -->
+  <section class="screen" data-screen="results" aria-labelledby="results-title" hidden>
+    <header class="topbar">
+      <button class="btn btn--ghost btn--back" type="button" data-go="upload" aria-label="Back">←</button>
+      <p class="topbar__step">Your results</p>
+      <button class="btn btn--ghost btn--small" type="button" id="start-over">Start over</button>
+    </header>
+
+    <div class="wrap">
+      <h2 id="results-title" class="visually-hidden">Your results</h2>
+
+      <div id="notices" class="notices"></div>
+
+      <div class="summary" id="summary"></div>
+
+      <div class="tabs" role="group" aria-label="Result views" id="tabs"></div>
+
+      <div class="controls">
+        <input type="search" id="search" class="input" placeholder="Search username" aria-label="Search username" autocomplete="off">
+        <select id="sort" class="input input--select" aria-label="Sort by">
+          <option value="username">A–Z</option>
+          <option value="newest">Newest first</option>
+          <option value="oldest">Oldest first</option>
+        </select>
+      </div>
+
+      <div class="list-actions">
+        <button class="btn btn--ghost btn--small" type="button" id="copy-usernames">Copy usernames</button>
+        <button class="btn btn--ghost btn--small" type="button" id="download-csv">Download CSV</button>
+        <button class="btn btn--ghost btn--small btn--danger" type="button" id="clear-data">Clear saved progress</button>
+      </div>
+
+      <p class="list-meta" id="list-meta" role="status" aria-live="polite"></p>
+      <ul class="accounts" id="accounts" aria-live="polite"></ul>
+      <div id="sentinel" class="sentinel" aria-hidden="true"></div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <p>
+    Not affiliated with Instagram or Meta.
+    Your data never leaves your device.
+  </p>
+</footer>
+
+<script type="module" src="assets/js/main.js"></script>
+</body>
+</html>
