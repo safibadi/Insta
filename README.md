@@ -51,21 +51,30 @@ Direct link to the download page:
 <https://accountscenter.instagram.com/info_and_permissions/dyi/>
 (on a computer, `instagram.com/dyi` works too)
 
-1. Instagram → your profile → ☰ menu → **Settings and privacy**
-2. **Accounts Center** → **Your information and permissions**
-3. **Download your information** → **Download or transfer information**
-4. Pick your account → **Some of your information**
-5. Under **Connections**, tick **Followers and following** — *only that one*
-6. **Download to device** → date range **All time** → format **JSON**
-7. Instagram emails you a link. Usually minutes, sometimes up to 24 hours.
-   **The link expires after 4 days.**
+1. Instagram → your profile → ☰ menu → **Settings and activity**
+2. Under *Your account*, tap **Accounts Centre**
+3. **Your information and permissions** → **Export your information**
+4. **Create export** → pick your account → **Export to device**
+5. **Customise information** → tap **Clear all** on every section, then under
+   **Connections** tick **Followers and following** — *that one only* → **Save**
+6. **Date range** → **All time** → **Save**
+7. **Format** → **JSON** → **Save**
+8. **Start export**
+9. Instagram emails you when it's ready, often within minutes. Your file then
+   appears under **Available downloads** on the same *Export your information*
+   screen. **You have 4 days to download it.**
 
-> **Step 5 is the one that matters.** If you select everything instead,
-> Instagram builds an archive containing all your photos and videos. It takes
-> much longer to prepare and can be slow to open on a phone. Ticking just
-> *Followers and following* keeps it to a few kilobytes.
+> **Step 5 is the one that matters.** Instagram arrives with *every* category
+> already ticked, so leaving it alone exports all your photos, videos and
+> messages — a multi-gigabyte archive that takes hours to build and can be slow
+> to open on a phone. Clearing everything and ticking only *Followers and
+> following* keeps it under a megabyte.
 >
 > That said, a full export still works here — see below.
+
+These steps are transcribed from the real iPhone flow (Instagram, August 2026).
+Android and desktop use the same Accounts Centre screens, since it is one
+shared web flow, but have not been walked through on a device.
 
 Then:
 
@@ -88,6 +97,16 @@ Anything Instagram hands you:
   Split follower lists (`followers_1`, `followers_2`, …) are merged
   automatically.
 - **A whole unzipped folder** (on a computer).
+- **The three different entry shapes Instagram uses.** `followers_1.json`
+  states the username in a `value` field; `following.json` omits `value`
+  entirely, putting the name in `title` and linking via `/_u/<username>`; and
+  the request/blocked/favourite files drop `string_list_data` altogether in
+  favour of a `label_values` array. `blocked_profiles.json` is a single record
+  at the root rather than a list. All four are handled, and each has a
+  regression test.
+- **Instagram's double-encoded text.** The export writes UTF-8 bytes escaped as
+  Latin-1, so `Renée 💙` arrives as `Ren\u00c3\u00a9e ...` and would
+  otherwise render as mojibake. Names are repaired on read.
 - **The HTML export**, if you picked HTML instead of JSON. Fully supported —
   every count and list is exactly as accurate as with JSON. The only
   difference is that the HTML format has no machine-readable follow dates, so

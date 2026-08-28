@@ -25,37 +25,55 @@ export function supportsFolderUpload() {
   return 'webkitdirectory' in document.createElement('input');
 }
 
+/*
+ * The iPhone path below is transcribed from screenshots of the real flow
+ * (Instagram, August 2026) and is verified step by step. Android and Computer
+ * follow the same Accounts Centre screens - it is one shared web flow served
+ * inside the app - but have not been walked through on a device, so treat
+ * their wording as close rather than confirmed.
+ *
+ * Instagram renamed most of this: "Settings and privacy" is now "Settings and
+ * activity", "Download your information" is now "Export your information",
+ * and the final button is "Start export" rather than "Create files".
+ */
+
 const REQUEST_STEPS_APP = [
-  'Open Instagram and go to your profile.',
-  'Tap the ☰ menu (top right), then <b>Settings and privacy</b>.',
-  'Tap <b>Accounts Center</b>, then <b>Your information and permissions</b>.',
-  'Tap <b>Download your information</b> → <b>Download or transfer information</b>.',
-  'Pick your Instagram account, then choose <b>Some of your information</b>.',
+  'Open Instagram, go to your profile and tap the ☰ menu (top right).',
+  'Tap <b>Settings and activity</b>.',
+  'At the top, under <i>Your account</i>, tap <b>Accounts Centre</b>.',
+  'Tap <b>Your information and permissions</b>.',
+  'Tap <b>Export your information</b>, then <b>Create export</b>.',
+  'Pick your Instagram account, then choose <b>Export to device</b>.',
 ];
 
 const REQUEST_STEPS_WEB = [
   'Open Instagram in your browser and sign in.',
-  'Go to <b>Settings</b> → <b>Accounts Center</b> → <b>Your information and permissions</b>.',
-  'Click <b>Download your information</b> → <b>Download or transfer information</b>.',
-  'Pick your Instagram account, then choose <b>Some of your information</b>.',
+  'Go to <b>Settings</b> → <b>Accounts Centre</b>.',
+  'Click <b>Your information and permissions</b>.',
+  'Click <b>Export your information</b>, then <b>Create export</b>.',
+  'Pick your Instagram account, then choose <b>Export to device</b>.',
 ];
 
 const CHOOSE_DATA_STEP = {
   html:
-    'Scroll to <b>Connections</b> and tick <b>Followers and following</b> — ' +
-    'just that one, nothing else.',
+    'Tap <b>Customise information</b>. Everything starts ticked, so tap ' +
+    '<b>Clear all</b> on each section, then scroll to <b>Connections</b> and ' +
+    'tick <b>Followers and following</b> — that one only. Tap <b>Save</b>.',
   highlight:
-    'This is the step that matters most. Selecting everything produces a ' +
-    'huge archive full of your photos and videos, which takes far longer to ' +
-    'prepare and can be slow to open on a phone. Ticking only this keeps the ' +
-    'file small and fast.',
+    'Instagram pre-selects every category, so this screen opens with all of ' +
+    'your photos, videos and messages already included. Left as-is you get a ' +
+    'multi-gigabyte archive that takes hours to build and can be slow to open ' +
+    'on a phone. Clearing everything and ticking only Followers and following ' +
+    'keeps it under a megabyte and usually ready within minutes.',
 };
 
 const DELIVERY_STEPS = [
-  'Choose <b>Download to device</b>.',
-  'Set date range to <b>All time</b> and format to <b>JSON</b>, then tap <b>Create files</b>.',
-  'Instagram emails you a link — usually within minutes, sometimes up to 24 hours. ' +
-    '<b>The link expires after 4 days.</b>',
+  'Tap <b>Date range</b> → <b>All time</b> → <b>Save</b>.',
+  'Tap <b>Format</b> → <b>JSON</b> → <b>Save</b>. (HTML works here too, but ' +
+    'JSON gives exact follow dates.)',
+  'Tap <b>Start export</b>.',
+  'Instagram emails you when it is ready — often within minutes. ' +
+    '<b>You then have 4 days to download it.</b>',
 ];
 
 export const DEVICES = {
@@ -65,8 +83,9 @@ export const DEVICES = {
     chooseStep: CHOOSE_DATA_STEP,
     deliverySteps: DELIVERY_STEPS,
     retrieveSteps: [
-      'Open the emailed link in Chrome and let the ZIP download.',
-      'It saves to <b>Files</b> → <b>Downloads</b>.',
+      'When the email arrives, go back to <b>Export your information</b> — your ' +
+        'file is listed under <b>Available downloads</b>. Tap <b>Download</b>.',
+      'The ZIP saves to <b>Files</b> → <b>Downloads</b>.',
       'Come back here, tap <b>Choose file</b>, and pick the ZIP. No need to unzip it.',
     ],
   },
@@ -76,8 +95,9 @@ export const DEVICES = {
     chooseStep: CHOOSE_DATA_STEP,
     deliverySteps: DELIVERY_STEPS,
     retrieveSteps: [
-      'Open the emailed link in Safari and let the ZIP download.',
-      'It saves to the <b>Files</b> app → <b>Downloads</b>.',
+      'When the email arrives, go back to <b>Export your information</b> — your ' +
+        'file is listed under <b>Available downloads</b>. Tap <b>Download</b>.',
+      'The ZIP saves to the <b>Files</b> app → <b>Downloads</b>.',
       'Come back here, tap <b>Choose file</b>, and pick the ZIP.',
       'If picking the ZIP does not work, open <b>Files</b>, long-press it, tap ' +
         '<b>Uncompress</b>, then select <b>followers_1.json</b> and ' +
@@ -90,7 +110,8 @@ export const DEVICES = {
     chooseStep: CHOOSE_DATA_STEP,
     deliverySteps: DELIVERY_STEPS,
     retrieveSteps: [
-      'Open the emailed link and download the ZIP.',
+      'When the email arrives, go back to <b>Export your information</b> and ' +
+        'download your file from <b>Available downloads</b>.',
       'Come back here and drag the ZIP onto the upload box — or unzip it first ' +
         'and drop in the whole folder.',
     ],

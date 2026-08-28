@@ -27,7 +27,10 @@ function intersection(source, other) {
  * curious about.
  */
 export function analyze(sets) {
-  const { followers, following, pending, unfollowed, closeFriends, blocked } = sets;
+  const {
+    followers, following, pending, unfollowed, favorited, blocked,
+    receivedRequests, recentRequests, removedSuggestions,
+  } = sets;
 
   return {
     notFollowingBack: difference(following, followers),
@@ -35,8 +38,11 @@ export function analyze(sets) {
     mutuals: intersection(following, followers),
     pending,
     unfollowed,
-    closeFriends,
+    favorited,
     blocked,
+    receivedRequests,
+    recentRequests,
+    removedSuggestions,
     totals: {
       followers: followers.length,
       following: following.length,

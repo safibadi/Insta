@@ -22,17 +22,26 @@ const FILE_KINDS = [
   { kind: 'following', pattern: /^following$/ },
   { kind: 'pending', pattern: /^pending_follow_requests$/ },
   { kind: 'unfollowed', pattern: /^recently_unfollowed_(profiles|accounts)$/ },
-  { kind: 'closeFriends', pattern: /^close_friends$/ },
+  // Instagram renamed close friends to "profiles you've favorited"; the old
+  // name is kept so older exports still work. Real filenames contain an
+  // apostrophe, which may be straight or curly depending on the export.
+  { kind: 'favorited', pattern: /^(profiles_you.?ve_favorited|close_friends)$/ },
   { kind: 'blocked', pattern: /^blocked_profiles$/ },
+  { kind: 'receivedRequests', pattern: /^follow_requests_you.?ve_received$/ },
+  { kind: 'recentRequests', pattern: /^recent_follow_requests$/ },
+  { kind: 'removedSuggestions', pattern: /^removed_suggestions$/ },
 ];
 
 export const KIND_LABELS = {
   followers: 'Followers',
   following: 'Following',
-  pending: 'Pending follow requests',
+  pending: 'Requests you sent',
   unfollowed: 'Recently unfollowed',
-  closeFriends: 'Close friends',
+  favorited: 'Favourites',
   blocked: 'Blocked accounts',
+  receivedRequests: 'Requests you received',
+  recentRequests: 'Recently requested',
+  removedSuggestions: 'Removed suggestions',
 };
 
 const SUPPORTED_EXTENSIONS = new Set(['json', 'html', 'htm']);
@@ -82,19 +91,51 @@ export function usernameFromHref(href) {
   const segments = url.pathname.split('/').filter(Boolean);
   if (segments.length === 0) return null;
 
-  const candidate = segments[0];
+  // following.json links through Instagram's deep-link redirector, as
+  // `/_u/<username>`. Taking the first segment blindly yields "_u" for every
+  // single account - a wrong answer that looks plausible enough to be used
+  // instead of falling through to a field that holds the real name.
+  const segmentIndex = segments[0].toLowerCase() === '_u' ? 1 : 0;
+  const candidate = segments[segmentIndex];
+  if (!candidate) return null;
+
   // Skip Instagram's own routes so navigation chrome in an HTML export doesn't
-  // get mistaken for a person.
+  // get mistaken for a person. `_u` is listed so it can never surface as a
+  // username even from a malformed path.
   const reserved = new Set([
     'p', 'reel', 'reels', 'stories', 'explore', 'accounts', 'directory',
     'about', 'developer', 'legal', 'privacy', 'terms', 'help', 'download',
+    '_u',
   ]);
   if (reserved.has(candidate.toLowerCase())) return null;
   return candidate;
 }
 
-function makeRecord(username, href, timestamp, dateText) {
-  const clean = String(username).trim().replace(/^@+/, '');
+/**
+ * Some export files carry no `string_list_data` at all. Instead each item holds
+ * a `label_values` array of {label, value} pairs - the username under
+ * "Username", and a display name under "Name" that the followers and following
+ * files never provide.
+ */
+function fromLabelValues(item) {
+  if (!Array.isArray(item.label_values)) return null;
+
+  let username = null;
+  let displayName = null;
+  for (const pair of item.label_values) {
+    if (!pair || typeof pair !== 'object') continue;
+    const label = String(pair.label || '').toLowerCase();
+    if (label === 'username' && pair.value) username = String(pair.value);
+    else if (label === 'name' && pair.value) displayName = String(pair.value);
+  }
+  if (!username) return null;
+
+  const timestamp = Number.isFinite(item.timestamp) ? item.timestamp * 1000 : null;
+  return { username, displayName, timestamp };
+}
+
+function makeRecord(username, href, timestamp, dateText, displayName) {
+  const clean = repairEncoding(String(username).trim()).replace(/^@+/, '');
   if (!clean) return null;
   return {
     username: clean,
@@ -105,6 +146,8 @@ function makeRecord(username, href, timestamp, dateText) {
     originalHref: typeof href === 'string' ? href : null,
     timestamp: Number.isFinite(timestamp) && timestamp > 0 ? timestamp : null,
     dateText: dateText || null,
+    // Only the label_values files carry a real name; null everywhere else.
+    displayName: displayName ? repairEncoding(String(displayName).trim()) || null : null,
   };
 }
 
@@ -115,6 +158,16 @@ function makeRecord(username, href, timestamp, dateText) {
  * one - accept an array at the root, else take the first array-valued
  * property, preferring `relationships_*`.
  */
+/** Does this object describe one account, rather than wrap a list of them? */
+function looksLikeRecord(value) {
+  return Boolean(
+    value &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    (Array.isArray(value.label_values) || Array.isArray(value.string_list_data))
+  );
+}
+
 function extractArray(parsed) {
   if (Array.isArray(parsed)) return parsed;
   if (!parsed || typeof parsed !== 'object') return [];
@@ -125,8 +178,70 @@ function extractArray(parsed) {
   );
   if (preferred) return parsed[preferred];
 
-  const fallback = keys.find((key) => Array.isArray(parsed[key]));
+  // blocked_profiles.json is a single record at the root rather than a wrapper
+  // around a list. Checked before the array fallback below, which would
+  // otherwise seize on `media` (usually empty) or `label_values` (the record's
+  // own fields) and report no accounts at all.
+  if (looksLikeRecord(parsed)) return [parsed];
+
+  // Never fall back to an array that belongs to a record rather than holding
+  // records itself.
+  const fallback = keys.find(
+    (key) => Array.isArray(parsed[key]) && key !== 'media' && key !== 'label_values'
+  );
   return fallback ? parsed[fallback] : [];
+}
+
+/**
+ * Repair Instagram's double-encoded text.
+ *
+ * The export writes UTF-8 bytes escaped one-per-code-point as Latin-1, so a
+ * name like "Renée" arrives as "Ren\u00c3\u00a9e" and renders as
+ * "RenÃ©e". Reading those code points back as raw bytes and decoding them
+ * as UTF-8 recovers the original.
+ *
+ * Strict decoding is what makes this safe: text that is merely accented rather
+ * than mangled fails to decode as UTF-8 and is returned untouched, so a
+ * correctly-encoded export is never corrupted by this.
+ */
+function repairEncoding(text) {
+  if (typeof text !== 'string' || !text) return text;
+
+  let hasHighLatin1 = false;
+  const bytes = new Uint8Array(text.length);
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i);
+    // A code point above 0xFF cannot be a stray byte, so this is real text.
+    if (code > 0xff) return text;
+    if (code >= 0x80) hasHighLatin1 = true;
+    bytes[i] = code;
+  }
+  if (!hasHighLatin1) return text;
+
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch {
+    return text;
+  }
+}
+
+/**
+ * Resolve the username for one string_list_data entry.
+ *
+ * Order matters, and getting it wrong is what broke this parser on real data.
+ * followers_*.json puts the username in `value`; following.json omits `value`
+ * entirely, puts the username in the item's `title`, and links via
+ * `/_u/<username>`. Parsing that href used to run before `title` was consulted
+ * and returned "_u" for every account - a wrong answer confident enough to
+ * shadow the correct one, collapsing an entire following list to one record.
+ *
+ * So: the two fields that state the username outright are trusted first, and
+ * the href - which has to be interpreted - is the last resort.
+ */
+function usernameForEntry(item, entry) {
+  if (entry && entry.value) return entry.value;
+  if (typeof item.title === 'string' && item.title.trim()) return item.title;
+  return entry ? usernameFromHref(entry.href) : null;
 }
 
 function parseJsonText(text) {
@@ -139,9 +254,19 @@ function parseJsonText(text) {
     const list = Array.isArray(item.string_list_data) ? item.string_list_data : [];
 
     if (list.length === 0) {
-      // A few record types carry the name in `title` with an empty list.
+      // Files like pending_follow_requests.json carry no string_list_data at
+      // all - the username lives in a label_values array instead.
+      const labelled = fromLabelValues(item);
+      if (labelled) {
+        const record = makeRecord(
+          labelled.username, null, labelled.timestamp, null, labelled.displayName
+        );
+        if (record) records.push(record);
+        continue;
+      }
+      // Otherwise a bare title is the whole record.
       if (typeof item.title === 'string' && item.title.trim()) {
-        const record = makeRecord(item.title, null, null, null);
+        const record = makeRecord(item.title, null, null, null, null);
         if (record) records.push(record);
       }
       continue;
@@ -149,11 +274,11 @@ function parseJsonText(text) {
 
     for (const entry of list) {
       if (!entry || typeof entry !== 'object') continue;
-      const name = entry.value || usernameFromHref(entry.href) || item.title;
+      const name = usernameForEntry(item, entry);
       if (!name) continue;
       // Instagram's timestamps are seconds; JS wants milliseconds.
       const timestamp = Number.isFinite(entry.timestamp) ? entry.timestamp * 1000 : null;
-      const record = makeRecord(name, entry.href, timestamp, null);
+      const record = makeRecord(name, entry.href, timestamp, null, null);
       if (record) records.push(record);
     }
   }
@@ -223,7 +348,8 @@ function emptyResult() {
   return {
     sets: {
       followers: [], following: [], pending: [],
-      unfollowed: [], closeFriends: [], blocked: [],
+      unfollowed: [], favorited: [], blocked: [],
+      receivedRequests: [], recentRequests: [], removedSuggestions: [],
     },
     formats: new Set(),
     matchedFiles: [],

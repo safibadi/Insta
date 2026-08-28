@@ -81,6 +81,14 @@ equal('older flat path still matches', classifyPath('followers_and_following/fol
 equal('pending_follow_requests.json', classifyPath('pending_follow_requests.json'), 'pending');
 equal('blocked_profiles.json', classifyPath('blocked_profiles.json'), 'blocked');
 equal('HTML variant classifies too', classifyPath('following.html'), 'following');
+equal("profiles_you've_favorited.json", classifyPath("profiles_you've_favorited.json"), 'favorited');
+equal('close_friends.json still works for older exports', classifyPath('close_friends.json'), 'favorited');
+equal("follow_requests_you've_received.json",
+  classifyPath("connections/followers_and_following/follow_requests_you've_received.json"), 'receivedRequests');
+equal('recent_follow_requests.json', classifyPath('recent_follow_requests.json'), 'recentRequests');
+equal('removed_suggestions.json', classifyPath('removed_suggestions.json'), 'removedSuggestions');
+equal('curly apostrophe filename also matches',
+  classifyPath('profiles_you\u2019ve_favorited.json'), 'favorited');
 equal('unrelated json ignored', classifyPath('ads_information/advertisers.json'), null);
 equal('media ignored', classifyPath('media/posts/photo_001.jpg'), null);
 equal('start_here.html ignored', classifyPath('start_here.html'), null);
@@ -116,8 +124,8 @@ equal('followers merged across both files',
   names(jsonParsed.sets.followers), ['MIXEDCASE', 'alice', 'bob', 'mallory', 'zoe']);
 equal('following read from relationships_following wrapper',
   jsonParsed.sets.following.length, 7);
-equal('pending requests read from its own wrapper key',
-  names(jsonParsed.sets.pending), ['pending_person']);
+equal('pending requests read from the label_values shape',
+  names(jsonParsed.sets.pending), ['requested_one', 'requested_two']);
 equal('format reported as json', [...jsonParsed.formats], ['json']);
 equal('no errors', jsonParsed.errors, []);
 
@@ -134,6 +142,58 @@ check('...and its URL is percent-encoded, so no javascript: sneaks through',
 
 const unicode = jsonParsed.sets.following.find((r) => r.username.startsWith('ü'));
 check('non-ASCII username preserved', unicode && unicode.username === 'ünïcode_user', unicode);
+
+/* ============================================================ */
+group('following.json — the real shape (regression: issue found on live data)');
+
+// following.json does not look like followers_1.json. It has no `value` key,
+// puts the username in `title`, and links via `/_u/<username>`. Reading the
+// href before the title yields "_u" for every entry, which deduplicates a
+// whole following list down to a single account. That shipped, and produced
+// wildly wrong counts on a real export.
+equal('/_u/ redirect href resolves to the real username',
+  usernameFromHref('https://www.instagram.com/_u/alice'), 'alice');
+equal('/_u/ with nothing after it is rejected',
+  usernameFromHref('https://www.instagram.com/_u/'), null);
+equal('"_u" can never surface as a username',
+  usernameFromHref('https://www.instagram.com/_u'), null);
+
+const followingNames = names(jsonParsed.sets.following);
+check('every following entry is a DISTINCT account, not all "_u"',
+  followingNames.length === 7 && new Set(followingNames).size === 7,
+  followingNames);
+check('...and none of them is "_u"',
+  !jsonParsed.sets.following.some((r) => r.key === '_u'), followingNames);
+check('title wins over a /_u/ href when there is no value field',
+  jsonParsed.sets.following.some((r) => r.username === 'charlie'), followingNames);
+
+/* ============================================================ */
+group('label_values shape — no string_list_data at all');
+
+const pendingOne = jsonParsed.sets.pending.find((r) => r.username === 'requested_one');
+check('username read from the "Username" label', Boolean(pendingOne), jsonParsed.sets.pending);
+equal('display name read from the "Name" label', pendingOne.displayName, 'Jordan Lee');
+check('timestamp carried across', pendingOne.timestamp > 0, pendingOne.timestamp);
+
+const mangled = jsonParsed.sets.pending.find((r) => r.username === 'requested_two');
+equal('double-encoded display name is repaired', mangled.displayName, 'Renée');
+
+const blocked = await parseUpload([
+  await fixture('json/blocked_profiles.json', 'blocked_profiles.json'),
+]);
+equal('a single record at the ROOT is read, not its empty media array',
+  names(blocked.sets.blocked), ['blocked_person']);
+
+const favorited = await parseUpload([
+  await fixture("json/profiles_you've_favorited.json", "profiles_you've_favorited.json"),
+]);
+equal('profiles_you\'ve_favorited replaces the old close_friends file',
+  names(favorited.sets.favorited), ['fave_one']);
+
+const received = await parseUpload([
+  await fixture("json/follow_requests_you've_received.json", "follow_requests_you've_received.json"),
+]);
+equal('follow requests received are recognised', names(received.sets.receivedRequests), ['asked_me']);
 
 /* ============================================================ */
 group('Analysis — the actual answer');
@@ -209,7 +269,7 @@ equal('small export gives the same answer',
 const fullZip = await parseUpload([await fixture('export-full.zip')]);
 equal('full export: still finds the right files among 140+ others',
   names(analyze(fullZip.sets).notFollowingBack), names(analysis.notFollowingBack));
-equal('full export: only the 4 relevant entries were read', fullZip.filesScanned, 4);
+equal('full export: only the relevant entries were read', fullZip.filesScanned, 3);
 equal('full export: no errors from the media files', fullZip.errors, []);
 
 const htmlZip = await parseUpload([await fixture('export-html.zip')]);

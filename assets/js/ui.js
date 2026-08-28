@@ -252,10 +252,16 @@ function accountRow(record, isHandled, onToggle) {
   const when = formatWhen(record);
   const meta = document.createElement('div');
   meta.className = 'account__meta';
-  meta.textContent = when.text;
-  if (when.title) {
-    meta.title = when.title;
-    meta.setAttribute('aria-label', when.title);
+
+  // The request/blocked/favourite files carry a display name that the
+  // followers and following files never do. Show it when we have it.
+  const metaParts = [record.displayName, when.text].filter(Boolean);
+  meta.textContent = metaParts.join(' · ');
+
+  const fullMeta = [record.displayName, when.title].filter(Boolean).join(' · ');
+  if (fullMeta) {
+    meta.title = fullMeta;
+    meta.setAttribute('aria-label', fullMeta);
   }
 
   body.append(name, meta);

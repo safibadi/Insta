@@ -93,12 +93,20 @@ check('iPhone tab auto-selected from the user agent',
 
 check('iPhone steps mention the Files app',
   (await page.textContent('#steps-content')).includes('Files'));
-check('the "tick only Followers and following" step is highlighted',
-  (await page.textContent('.callout')).includes('huge archive'));
+check('the callout warns that Instagram pre-selects everything',
+  (await page.textContent('.callout')).includes('pre-selects'),
+  await page.textContent('.callout'));
+check('the steps name the current menu, not the old one',
+  (await page.textContent('#steps-content')).includes('Export your information'));
 
+// iOS is the only path with the Files-app unzip fallback, so it is what
+// actually distinguishes the two tabs.
+check('iPhone steps include the Files app unzip fallback',
+  (await page.textContent('#steps-content')).includes('Uncompress'));
 await page.click('[data-device="android"]');
 check('switching to Android swaps the steps',
-  (await page.textContent('#steps-content')).includes('Chrome'));
+  !(await page.textContent('#steps-content')).includes('Uncompress'),
+  await page.textContent('#steps-content'));
 
 await page.click('button[data-go="upload"]');
 await page.waitForSelector('[data-screen="upload"]:not([hidden])');

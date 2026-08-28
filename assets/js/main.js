@@ -29,6 +29,7 @@ const dom = {
   uploadStatus: document.getElementById('upload-status'),
   notices: document.getElementById('notices'),
   summary: document.getElementById('summary'),
+  countNote: document.getElementById('count-note'),
   tabs: document.getElementById('tabs'),
   search: document.getElementById('search'),
   sort: document.getElementById('sort'),
@@ -228,15 +229,33 @@ async function handleFiles(fileList) {
    Results screen
    --------------------------------------------------------------- */
 
+/**
+ * Instagram's export routinely lists a few more accounts than the profile
+ * counter shows, because accounts that were deactivated or deleted stay in the
+ * file while dropping out of the live count. Worth saying plainly - otherwise
+ * the first thing anyone does is compare the two numbers and conclude the tool
+ * is broken.
+ */
+function renderCountNote(container, results) {
+  container.textContent =
+    `Counted from your export: ${results.totals.followers.toLocaleString()} followers, ` +
+    `${results.totals.following.toLocaleString()} following. ` +
+    'These can run slightly above the numbers on your profile — deactivated and ' +
+    'deleted accounts stay in the export after they stop counting.';
+}
+
 function buildTabs(results) {
   const candidates = [
     { id: 'notFollowingBack', label: "Doesn't follow back", records: results.notFollowingBack },
     { id: 'fans', label: 'Fans', records: results.fans },
     { id: 'mutuals', label: 'Mutuals', records: results.mutuals },
     { id: 'pending', label: 'Requests sent', records: results.pending },
+    { id: 'receivedRequests', label: 'Requests received', records: results.receivedRequests },
     { id: 'unfollowed', label: 'Recently unfollowed', records: results.unfollowed },
-    { id: 'closeFriends', label: 'Close friends', records: results.closeFriends },
+    { id: 'favorited', label: 'Favourites', records: results.favorited },
+    { id: 'recentRequests', label: 'Recently requested', records: results.recentRequests },
     { id: 'blocked', label: 'Blocked', records: results.blocked },
+    { id: 'removedSuggestions', label: 'Removed suggestions', records: results.removedSuggestions },
   ];
   // The first three always show, even at zero, because their absence is
   // itself the answer. The optional ones only appear if that file was present.
@@ -285,6 +304,7 @@ function showResults(results, notices, hasTimestamps) {
 
   renderNotices(dom.notices, notices);
   renderSummary(dom.summary, results);
+  renderCountNote(dom.countNote, results);
 
   // Date sorting is meaningless without timestamps, which the HTML export
   // doesn't provide - so hide those options rather than offering a no-op.

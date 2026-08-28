@@ -33,7 +33,10 @@ FOLLOWING = [
 PENDING = ["pending_person"]
 
 
-def entry(username, index):
+def follower_entry(username, index):
+    """
+    The followers_*.json shape: username stated outright in `value`, plain href.
+    """
     return {
         "title": "",
         "media_list_data": [],
@@ -45,14 +48,52 @@ def entry(username, index):
     }
 
 
+def following_entry(username, index):
+    """
+    The following.json shape, copied from a real export - and deliberately
+    NOT the same as the followers shape.
+
+    There is no `value` key at all, the username sits in `title`, and the href
+    goes through Instagram's `/_u/` deep-link redirector. A parser that reads
+    the href before the title extracts "_u" from every single entry and
+    collapses the whole list to one account. That was a real, shipped bug; the
+    fixture exists so it cannot come back.
+    """
+    return {
+        "title": username,
+        "string_list_data": [{
+            "href": f"https://www.instagram.com/_u/{username}",
+            "timestamp": BASE_TS + index * 86400,
+        }],
+    }
+
+
+def label_values_entry(username, display_name, index):
+    """
+    The shape used by pending_follow_requests.json, blocked_profiles.json and
+    the other request files: no string_list_data whatsoever. The username is a
+    labelled pair, and a display name comes along with it.
+    """
+    return {
+        "timestamp": BASE_TS + index * 86400,
+        "media": [],
+        "label_values": [
+            {"label": "URL", "value": ""},
+            {"label": "Name", "value": display_name},
+            {"label": "Username", "value": username},
+        ],
+        "fbid": f"1784100000000{index:04}",
+    }
+
+
 def bare_array(names):
     """followers_*.json is a bare array at the root."""
-    return [entry(name, i) for i, name in enumerate(names)]
+    return [follower_entry(name, i) for i, name in enumerate(names)]
 
 
 def wrapped(key, names):
-    """following.json and friends wrap the array in a relationships_* key."""
-    return {key: [entry(name, i) for i, name in enumerate(names)]}
+    """following.json wraps its array in a relationships_* key."""
+    return {key: [following_entry(name, i) for i, name in enumerate(names)]}
 
 
 def html_export(names, title):
@@ -97,9 +138,7 @@ def main():
         "followers_1.json": json.dumps(bare_array(FOLLOWERS_A), indent=2),
         "followers_2.json": json.dumps(bare_array(FOLLOWERS_B), indent=2),
         "following.json": json.dumps(wrapped("relationships_following", FOLLOWING), indent=2),
-        "pending_follow_requests.json": json.dumps(
-            wrapped("relationships_follow_requests_sent", PENDING), indent=2
-        ),
+
     }
     for name, content in json_files.items():
         write(f"json/{name}", content)
@@ -119,14 +158,43 @@ def main():
     # still find the array rather than returning nothing.
     write(
         "edge/renamed_following.json",
-        json.dumps({"relationships_following_v2": [entry("renamed_ok", 0)]}, indent=2),
+        json.dumps({"relationships_following_v2": [follower_entry("renamed_ok", 0)]}, indent=2),
     )
+
+    # The label_values shape, with a display name and a deliberately
+    # double-encoded one. Instagram writes UTF-8 bytes escaped as Latin-1, so
+    # "Renee" with an acute accent arrives mangled and must be repaired.
+    write("edge/pending_follow_requests.json", json.dumps([
+        label_values_entry("requested_one", "Jordan Lee", 0),
+        label_values_entry("requested_two", "Ren\u00c3\u00a9e", 1),
+    ], indent=2))
+
+    # blocked_profiles.json is a single record at the ROOT - not a list, and
+    # not a wrapper around one. Its `media` key is an empty array that a naive
+    # "first array-valued property" search will latch onto and report nothing.
+    write("edge/blocked_profiles.json",
+          json.dumps(label_values_entry("blocked_person", "Blocked Person", 0), indent=2))
 
     export_dir = "connections/followers_and_following"
 
     # A minimal export: only what the tool needs.
+    label_files = {
+        "pending_follow_requests.json": json.dumps([
+            label_values_entry("requested_one", "Jordan Lee", 0),
+            label_values_entry("requested_two", "Ren\u00c3\u00a9e", 1),
+        ], indent=2),
+        "blocked_profiles.json": json.dumps(
+            label_values_entry("blocked_person", "Blocked Person", 0), indent=2),
+        "profiles_you've_favorited.json": json.dumps([
+            label_values_entry("fave_one", "Fave One", 0)], indent=2),
+        "follow_requests_you've_received.json": json.dumps([
+            label_values_entry("asked_me", "Asked Me", 0)], indent=2),
+    }
+    for name, content in label_files.items():
+        write(f"json/{name}", content)
+
     with zipfile.ZipFile(os.path.join(ROOT, "export-small.zip"), "w", zipfile.ZIP_DEFLATED) as zf:
-        for name, content in json_files.items():
+        for name, content in {**json_files, **label_files}.items():
             zf.writestr(f"{export_dir}/{name}", content)
         zf.writestr("start_here.html", "<html><body>Start here</body></html>")
 

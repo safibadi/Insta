@@ -422,6 +422,14 @@ h2[tabindex="-1"]:focus-visible { outline: none; }
 .stat--headline { background: var(--accent-soft); border-color: var(--accent); }
 .stat--headline .stat__value { color: var(--accent-strong); }
 
+.count-note {
+  font-size: .78rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+  margin: -.75rem 0 1.25rem;
+}
+.count-note:empty { display: none; }
+
 .tabs {
   display: flex;
   gap: .4rem;
