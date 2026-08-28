@@ -140,18 +140,33 @@ It matters for reading the results: accounts like that never follow you back,
 so they land in "Doesn't follow back" and inflate it by however many there are.
 Mutuals are unaffected, since an account that follows you back is live.
 
+The **i** on the Following tile turns that caveat into a number. It asks
+whether your profile shows a different following count, and if you type in the
+number your profile shows, the difference is exactly how many accounts in your
+export Instagram no longer counts — *"14 profiles are deleted or deactivated"*
+rather than *"some of these may be"*. The Following tile is then corrected to
+your profile's number, with the export figure kept underneath it. The tool
+can't tell you *which* rows those are, only how many, since a deleted account
+looks like any other line in the file.
+
 ## What you get
 
 - **Doesn't follow back** — the headline: accounts you follow that don't follow you
+- **Followers** and **Following** — the two raw lists as they came out of the file
 - **Fans** — accounts that follow you but you don't follow back
 - **Mutuals** — the overlap
 - **Requests sent**, **Recently unfollowed**, **Close friends**, **Blocked** —
   shown only if those files are in your export
 
-Each row has an **Open** button that takes you to that profile, and a checkbox
-to mark someone as handled. Your checklist is saved in your browser so you can
-work through a long list over several sittings. Search, sort, copy all
-usernames, and CSV export are all there.
+Every count at the top of the results is a button: tap the number and the list
+below switches to it.
+
+Each row is a link — tap the avatar, the username, or the **Open** button and
+that profile opens in a new tab. Opening one ticks its checkbox for you, since
+that is the point at which you have dealt with someone; untick it again if you
+haven't. Your checklist is saved in your browser so you can work through a long
+list over several sittings. Search, sort, copy all usernames, and CSV export
+are all there.
 
 ## Two things this deliberately does not do
 
@@ -186,8 +201,8 @@ python3 -m http.server 8000
 
 ```bash
 python3 tests/make-fixtures.py     # generate fixtures (gitignored)
-node tests/run-unit.mjs            # 68 parser/analysis assertions
-node tests/run-e2e.mjs             # 37 browser assertions + screenshots
+node tests/run-unit.mjs            # 87 parser/analysis assertions
+node tests/run-e2e.mjs             # 69 browser assertions + screenshots
 ```
 
 The unit suite also runs in a normal browser at

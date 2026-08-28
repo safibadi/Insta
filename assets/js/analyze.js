@@ -36,6 +36,10 @@ export function analyze(sets) {
     notFollowingBack: difference(following, followers),
     fans: difference(followers, following),
     mutuals: intersection(following, followers),
+    // The raw lists are views in their own right: the Followers and Following
+    // tiles are tappable, and tapping one has to lead somewhere.
+    followers,
+    following,
     pending,
     unfollowed,
     favorited,

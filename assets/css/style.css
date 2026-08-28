@@ -409,18 +409,61 @@ h2[tabindex="-1"]:focus-visible { outline: none; }
   margin: 1rem 0 1.5rem;
 }
 /* The answer people came for gets a row to itself. */
-.stat--headline { grid-column: 1 / -1; }
+.stat-slot { position: relative; display: flex; }
+.stat-slot--headline { grid-column: 1 / -1; }
+
 .stat {
+  font: inherit;
+  color: var(--text);
+  width: 100%;
   background: var(--bg-raised);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: .8rem .6rem;
   text-align: center;
+  cursor: pointer;
+  transition: border-color .15s ease, background-color .15s ease;
 }
 .stat__value { font-size: 1.5rem; font-weight: 700; line-height: 1.1; }
 .stat__label { font-size: .76rem; color: var(--text-muted); }
+/* Only shown once the export count has been corrected against the profile. */
+.stat__note { font-size: .68rem; color: var(--text-muted); opacity: .85; }
 .stat--headline { background: var(--accent-soft); border-color: var(--accent); }
 .stat--headline .stat__value { color: var(--accent-strong); }
+
+/* The tile for the view you are looking at. The headline tile keeps its own
+   colouring, so it reads as selected through the border alone. */
+.stat[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+
+.stat__info {
+  position: absolute;
+  top: 0;
+  right: 0;
+  /* A 22px circle inside a 36px target: big enough to hit on a phone without
+     eating the corner of the tile it sits on. */
+  width: 36px; height: 36px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: .72rem;
+  font-weight: 700;
+  font-style: italic;
+  cursor: pointer;
+}
+.stat__info::before {
+  content: "";
+  position: absolute;
+  width: 22px; height: 22px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--bg);
+}
+.stat__info > * { position: relative; }
+.stat__info:hover { color: var(--text); }
 
 .count-note {
   font-size: .78rem;
@@ -429,6 +472,41 @@ h2[tabindex="-1"]:focus-visible { outline: none; }
   margin: -.75rem 0 1.25rem;
 }
 .count-note:empty { display: none; }
+
+/* ---------------------------------------------------------------
+   The following-count sheet
+   --------------------------------------------------------------- */
+.sheet {
+  width: min(30rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  color: var(--text);
+  padding: 1.1rem clamp(1rem, 4vw, 1.4rem) 1.2rem;
+  font-size: .92rem;
+}
+.sheet::backdrop { background: rgba(0, 0, 0, .55); }
+.sheet__head { display: flex; align-items: flex-start; gap: .5rem; margin-bottom: .6rem; }
+.sheet__title { font-size: 1.1rem; margin: 0; flex: 1; }
+.sheet__close {
+  flex: 0 0 auto;
+  min-width: var(--tap);
+  border-color: transparent;
+  font-size: 1rem;
+  line-height: 1;
+}
+.sheet__counts { font-weight: 600; color: var(--text); }
+.sheet__question { font-weight: 600; }
+.sheet__hint { font-size: .82rem; margin-bottom: .5rem; }
+.sheet__error { color: var(--danger); font-weight: 600; font-size: .85rem; margin: .5rem 0 0; }
+.sheet__error:empty { display: none; }
+.sheet__actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
+.sheet__actions .btn { flex: 1 1 auto; }
+.sheet [data-panel][hidden] { display: none; }
+.sheet .input { margin-top: .25rem; }
+.sheet .muted { color: var(--text-muted); }
 
 .tabs {
   display: flex;
@@ -474,6 +552,19 @@ h2[tabindex="-1"]:focus-visible { outline: none; }
 }
 .account.is-handled { opacity: .45; }
 
+/* Avatar and name are one link: tapping either opens the profile, which is
+   what people try first. */
+.account__link {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  flex: 1;
+  min-width: 0;
+  padding: .2rem 0;
+  text-decoration: none;
+  color: inherit;
+}
+
 .avatar {
   flex: 0 0 auto;
   width: 38px; height: 38px;
@@ -486,14 +577,16 @@ h2[tabindex="-1"]:focus-visible { outline: none; }
   user-select: none;
 }
 
-.account__body { min-width: 0; flex: 1; }
+.account__body { min-width: 0; flex: 1; display: block; }
 .account__name {
+  display: block;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .account__meta {
+  display: block;
   font-size: .76rem;
   color: var(--text-muted);
   white-space: nowrap;

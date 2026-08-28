@@ -192,6 +192,117 @@ check('search result count is announced',
 await page.fill('#search', '');
 
 /* ============================================================ */
+group('Summary tiles as navigation');
+
+equal('every tile switches the list to a view of its own',
+  await page.$$eval('.stat', (tiles) => tiles.map((t) => t.dataset.tabId)),
+  ['notFollowingBack', 'followers', 'following', 'fans', 'mutuals']);
+
+check('the tile for the view you are on is marked pressed',
+  (await page.getAttribute('.stat[data-tab-id="notFollowingBack"]', 'aria-pressed')) === 'true');
+
+await page.click('.stat[data-tab-id="followers"]');
+equal('tapping Followers shows the followers themselves',
+  await page.$$eval('.account__name', (els) => els.map((e) => e.textContent).sort()),
+  ['@MIXEDCASE', '@alice', '@bob', '@mallory', '@zoe']);
+equal('...and the tile and the tab agree on what is showing',
+  await page.$$eval('.stat[aria-pressed="true"], .tab[aria-pressed="true"]',
+    (els) => els.map((e) => e.dataset.tabId)),
+  ['followers', 'followers']);
+
+await page.click('.stat[data-tab-id="following"]');
+equal('tapping Following shows all 7 accounts you follow',
+  await page.$$eval('.account__name', (els) => els.length), 7);
+await page.click('.stat[data-tab-id="notFollowingBack"]');
+
+/* ============================================================ */
+group('Following-count explainer');
+
+// The explanation is behind the "i" rather than on the screen, so the results
+// open on the answer instead of on a paragraph about the answer.
+equal('nothing is spent on the count note until there is something to say',
+  (await page.textContent('#count-note')).trim(), '');
+check('the dialog stays closed until asked for', await page.isHidden('#count-dialog'));
+
+await page.click('.stat__info');
+check('the "i" on the Following tile opens the explainer',
+  await page.isVisible('#count-dialog'));
+check('...carrying the counts that used to sit on the results screen',
+  (await page.textContent('#count-dialog-counts')).includes('5 followers, 7 following'),
+  await page.textContent('#count-dialog-counts'));
+check('...and the deleted-account explanation with it',
+  (await page.textContent('#count-dialog')).includes("page isn't available"));
+
+await page.click('#count-differs');
+await page.fill('#count-input', '5');
+await page.click('#count-save');
+const ghostText = await page.textContent('#count-result');
+check('a profile count of 5 against 7 in the file names 2 dead accounts',
+  ghostText.startsWith('2 profiles are deleted or deactivated'), ghostText);
+check('...and says where they are',
+  ghostText.includes("Doesn't follow back"), ghostText);
+
+await page.click('#count-show-list');
+check('"Show that list" closes the dialog on the headline list',
+  (await page.isHidden('#count-dialog'))
+  && (await page.getAttribute('.tab[data-tab-id="notFollowingBack"]', 'aria-pressed')) === 'true');
+equal('the Following tile is corrected to the profile number',
+  await page.textContent('.stat[data-tab-id="following"] .stat__value'), '5');
+equal('...with the export figure kept as a footnote',
+  await page.textContent('.stat[data-tab-id="following"] .stat__note'), '7 in your export');
+check('the short note explains the gap in one line',
+  (await page.textContent('#count-note')).startsWith('2 of the 7 accounts'),
+  await page.textContent('#count-note'));
+
+// A number the browser's own validation lets through - "1.5" is typeable in a
+// number input - still has to be rejected rather than quietly floored.
+await page.click('.stat__info');
+await page.click('#count-differs');
+await page.fill('#count-input', '1.5');
+await page.click('#count-save');
+check('a fractional count is refused', (await page.textContent('#count-error')).length > 0);
+
+await page.fill('#count-input', '900');
+await page.click('#count-save');
+check('a profile count above the export is explained, not subtracted',
+  (await page.textContent('#count-result')).includes('snapshot'),
+  await page.textContent('#count-result'));
+equal('...and the tile goes back to the export figure',
+  await page.textContent('.stat[data-tab-id="following"] .stat__value'), '7');
+equal('...leaving no note behind', (await page.textContent('#count-note')).trim(), '');
+await page.click('#count-close');
+
+/* ============================================================ */
+group('Opening a profile ticks it off');
+
+const daveRow = '.account:has(.account__name:text-is("@dave"))';
+check('a row starts unticked', !(await page.isChecked(`${daveRow} input[type=checkbox]`)));
+
+const [profileTab] = await Promise.all([
+  phone.waitForEvent('page').catch(() => null),
+  page.click(`${daveRow} .account__link`),
+]);
+if (profileTab) await profileTab.close();
+check('tapping the avatar and name opens the profile and ticks the row',
+  await page.isChecked(`${daveRow} input[type=checkbox]`));
+check('...and that tick is saved like any other',
+  (await page.evaluate(() => localStorage.getItem('insta-nfb:handled:v1'))).includes('dave'));
+
+await page.click(`${daveRow} input[type=checkbox]`);
+check('a row ticked by opening it can be unticked again',
+  !(await page.isChecked(`${daveRow} input[type=checkbox]`)));
+
+const [openTab] = await Promise.all([
+  phone.waitForEvent('page').catch(() => null),
+  page.click(`${daveRow} .account__visit`),
+]);
+if (openTab) await openTab.close();
+check('the Open button ticks the row too',
+  await page.isChecked(`${daveRow} input[type=checkbox]`));
+// Left as the persistence group expects to find it.
+await page.click(`${daveRow} input[type=checkbox]`);
+
+/* ============================================================ */
 group('Checklist persistence');
 
 await page.click('.account:has(.account__name:text-is("@charlie")) input[type=checkbox]');

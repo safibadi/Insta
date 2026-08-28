@@ -40,6 +40,20 @@ const dom = {
   csvButton: document.getElementById('download-csv'),
   clearButton: document.getElementById('clear-data'),
   startOver: document.getElementById('start-over'),
+  countDialog: document.getElementById('count-dialog'),
+  countPanels: [...document.querySelectorAll('#count-dialog [data-panel]')],
+  countCounts: document.getElementById('count-dialog-counts'),
+  countQuestion: document.getElementById('count-question'),
+  countInput: document.getElementById('count-input'),
+  countError: document.getElementById('count-error'),
+  countResult: document.getElementById('count-result'),
+  countDiffers: document.getElementById('count-differs'),
+  countMatches: document.getElementById('count-matches'),
+  countSave: document.getElementById('count-save'),
+  countBack: document.getElementById('count-back'),
+  countClose: document.getElementById('count-close'),
+  countShowList: document.getElementById('count-show-list'),
+  countRedo: document.getElementById('count-redo'),
 };
 
 const state = {
@@ -48,6 +62,10 @@ const state = {
   activeTab: 'notFollowingBack',
   handled: loadHandled(),
   listRenderer: null,
+  // What the user's profile says their following count is, once they have
+  // told us. Null until then, and never persisted - the results themselves
+  // don't survive a reload either.
+  profileFollowing: null,
 };
 
 /* ---------------------------------------------------------------
@@ -230,27 +248,168 @@ async function handleFiles(fileList) {
    --------------------------------------------------------------- */
 
 /**
+ * The following count.
+ *
  * Instagram's export lists more accounts than the profile counter shows,
  * because deleted and deactivated accounts stay in the file after they stop
  * being counted. Confirmed by opening one from a real export's results: the
  * profile returns Instagram's "page isn't available".
  *
- * Worth stating up front - otherwise the first thing anyone does is compare
- * the two numbers and conclude the tool is broken.
+ * The explanation used to sit under the stats as a paragraph. It now lives
+ * behind the "i" on the Following tile, and asks for the number on the user's
+ * profile - the difference is exactly how many dead accounts the export is
+ * still listing, which turns a caveat into an answer.
  */
-function renderCountNote(container, results) {
-  container.textContent =
-    `Counted from your export file: ${results.totals.followers.toLocaleString()} followers, ` +
-    `${results.totals.following.toLocaleString()} following. ` +
-    'Your profile may show a lower following number — the export keeps listing ' +
-    'accounts that have since been deleted or deactivated, and Instagram stops ' +
-    "counting those. They can't follow you back, so they sit in the list below " +
-    'and inflate it. Opening one shows “Sorry, this page isn\'t available”.';
+
+/** How many accounts the export lists that Instagram no longer counts. */
+function ghostCount() {
+  if (state.profileFollowing === null || !state.results) return 0;
+  return Math.max(0, state.results.totals.following - state.profileFollowing);
 }
+
+function plural(count, singular, pluralForm) {
+  return count === 1 ? singular : pluralForm;
+}
+
+/**
+ * The one line left on the results screen, and only once there is something
+ * specific to say. Empty otherwise - `.count-note:empty` hides it.
+ */
+function renderCountNote() {
+  const ghosts = ghostCount();
+  if (ghosts === 0) {
+    dom.countNote.textContent = '';
+    return;
+  }
+  dom.countNote.textContent =
+    `${ghosts.toLocaleString()} of the ${state.results.totals.following.toLocaleString()} ` +
+    `accounts in your export ${plural(ghosts, 'is', 'are')} deleted or deactivated — ` +
+    `${plural(ghosts, 'it sits', 'they sit')} in “Doesn't follow back” below.`;
+}
+
+function showCountPanel(name) {
+  for (const panel of dom.countPanels) panel.hidden = panel.dataset.panel !== name;
+}
+
+function openCountDialog() {
+  const { followers, following } = state.results.totals;
+  dom.countCounts.textContent =
+    `Counted from your export file: ${followers.toLocaleString()} followers, ` +
+    `${following.toLocaleString()} following.`;
+  dom.countQuestion.textContent =
+    `Is the following count on your profile different from ${following.toLocaleString()}?`;
+
+  dom.countInput.value = state.profileFollowing === null ? '' : String(state.profileFollowing);
+  dom.countError.textContent = '';
+  showCountPanel('intro');
+  dom.countDialog.showModal();
+}
+
+/** Result panel, with the "Show that list" button only when there is a list to show. */
+function showCountResult(text, offerList) {
+  dom.countResult.textContent = text;
+  dom.countShowList.hidden = !offerList;
+  showCountPanel('result');
+}
+
+function applyProfileCount(value) {
+  state.profileFollowing = value;
+  renderCountNote();
+  renderSummary(dom.summary, state.results, summaryView());
+}
+
+function saveProfileCount() {
+  const exported = state.results.totals.following;
+  const raw = dom.countInput.value.trim();
+  const value = Number(raw);
+
+  if (!raw || !Number.isInteger(value) || value < 0) {
+    dom.countError.textContent = 'Enter the whole number your profile shows, like 518.';
+    dom.countInput.focus();
+    return;
+  }
+
+  if (value > exported) {
+    // Not an error on the user's part: an export is a snapshot, so anyone
+    // followed after it was requested is genuinely missing from the file.
+    // There is nothing to correct, so the tile goes back to the export figure.
+    applyProfileCount(null);
+    showCountResult(
+      `Your profile shows ${value.toLocaleString()}, which is more than the ` +
+        `${exported.toLocaleString()} in your export. An export is a snapshot of the ` +
+        'day you asked for it, so accounts you have followed since then are not in ' +
+        'the file. Request a fresh export to see them.',
+      false
+    );
+    return;
+  }
+
+  applyProfileCount(value);
+  const ghosts = ghostCount();
+
+  if (ghosts === 0) {
+    showCountResult(
+      'Your profile and your export agree, so nothing in your list has been ' +
+        'deleted or deactivated. Every account under “Doesn\'t follow back” is a ' +
+        'live account that simply does not follow you.',
+      false
+    );
+    return;
+  }
+
+  showCountResult(
+    `${ghosts.toLocaleString()} ${plural(ghosts, 'profile is', 'profiles are')} deleted or ` +
+      `deactivated. Your export still lists ${plural(ghosts, 'it', 'them')}; Instagram ` +
+      `stopped counting ${plural(ghosts, 'it', 'them')}, which is why your profile says ` +
+      `${state.profileFollowing.toLocaleString()}. ` +
+      `${plural(ghosts, 'It is', 'They are')} in your “Doesn't follow back” list — ` +
+      `${plural(ghosts, 'a dead account', 'dead accounts')} can't follow you back — and ` +
+      `opening ${plural(ghosts, 'it', 'one')} shows “Sorry, this page isn't available”. ` +
+      'We cannot tell which rows they are, only how many.',
+    true
+  );
+}
+
+dom.countDiffers.addEventListener('click', () => {
+  dom.countError.textContent = '';
+  showCountPanel('ask');
+  dom.countInput.focus();
+});
+
+dom.countMatches.addEventListener('click', () => {
+  applyProfileCount(state.results.totals.following);
+  showCountResult(
+    'Nothing to correct, then. Every account under “Doesn\'t follow back” is a ' +
+      'live account that simply does not follow you.',
+    false
+  );
+});
+
+dom.countSave.addEventListener('click', saveProfileCount);
+dom.countInput.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    saveProfileCount();
+  }
+});
+
+dom.countBack.addEventListener('click', () => showCountPanel('intro'));
+dom.countRedo.addEventListener('click', () => {
+  dom.countError.textContent = '';
+  showCountPanel('ask');
+  dom.countInput.focus();
+});
+dom.countClose.addEventListener('click', () => dom.countDialog.close());
+dom.countShowList.addEventListener('click', () => {
+  dom.countDialog.close();
+  selectTab('notFollowingBack');
+});
 
 function buildTabs(results) {
   const candidates = [
     { id: 'notFollowingBack', label: "Doesn't follow back", records: results.notFollowingBack },
+    { id: 'followers', label: 'Followers', records: results.followers },
+    { id: 'following', label: 'Following', records: results.following },
     { id: 'fans', label: 'Fans', records: results.fans },
     { id: 'mutuals', label: 'Mutuals', records: results.mutuals },
     { id: 'pending', label: 'Requests sent', records: results.pending },
@@ -261,13 +420,16 @@ function buildTabs(results) {
     { id: 'blocked', label: 'Blocked', records: results.blocked },
     { id: 'removedSuggestions', label: 'Removed suggestions', records: results.removedSuggestions },
   ];
-  // The first three always show, even at zero, because their absence is
-  // itself the answer. The optional ones only appear if that file was present.
-  return candidates.filter((tab, index) => index < 3 || tab.records.length > 0);
+  // The first five always show, even at zero: they are the five tiles at the
+  // top of the screen, and every one of those is tappable, so each needs a
+  // view to land on. The optional ones only appear if that file was present.
+  return candidates.filter((tab, index) => index < 5 || tab.records.length > 0);
 }
 
 const EMPTY_MESSAGES = {
   notFollowingBack: 'Everyone you follow follows you back. Nice.',
+  followers: 'No followers found in your export.',
+  following: 'No accounts found in your following list.',
   fans: 'No one follows you that you don\'t already follow back.',
   mutuals: 'No mutual follows found.',
 };
@@ -295,9 +457,28 @@ function refreshList() {
       : `${records.length.toLocaleString()} of ${total.toLocaleString()} accounts`;
 }
 
+/**
+ * What the summary tiles need beyond the numbers: which view is showing, and
+ * the corrected following count once the user has told us what their profile
+ * says.
+ */
+function summaryView() {
+  const ghosts = ghostCount();
+  return {
+    activeTab: state.activeTab,
+    onSelect: selectTab,
+    onInfo: openCountDialog,
+    followingShown: ghosts > 0 ? state.profileFollowing : null,
+    followingNote: ghosts > 0
+      ? `${state.results.totals.following.toLocaleString()} in your export`
+      : null,
+  };
+}
+
 function selectTab(tabId) {
   state.activeTab = tabId;
   renderTabs(dom.tabs, state.tabs, state.activeTab, selectTab);
+  renderSummary(dom.summary, state.results, summaryView());
   refreshList();
 }
 
@@ -305,10 +486,13 @@ function showResults(results, notices, hasTimestamps) {
   state.results = results;
   state.tabs = buildTabs(results);
   state.activeTab = 'notFollowingBack';
+  // A fresh file means the old profile number no longer applies.
+  state.profileFollowing = null;
 
   renderNotices(dom.notices, notices);
-  renderSummary(dom.summary, results);
-  renderCountNote(dom.countNote, results);
+  renderCountNote();
+  // The tiles are painted by selectTab below, which is what keeps the
+  // highlighted tile and the shown list in step with each other.
 
   // Date sorting is meaningless without timestamps, which the HTML export
   // doesn't provide - so hide those options rather than offering a no-op.
@@ -406,6 +590,7 @@ dom.clearButton.addEventListener('click', () => {
 
 dom.startOver.addEventListener('click', () => {
   state.results = null;
+  state.profileFollowing = null;
   dom.fileInput.value = '';
   dom.folderInput.value = '';
   setStatus(dom.uploadStatus, '', null);
