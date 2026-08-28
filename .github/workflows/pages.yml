@@ -57,7 +57,9 @@ jobs:
     # branch setting: this repo was created empty, so GitHub made whichever
     # branch was pushed first the default, which is not the branch we release
     # from.
-    if: github.ref_name == 'main' && github.event_name == 'push'
+    # Any trigger but a pull request may publish, so a deploy can be re-run by
+    # hand from the Actions tab without needing a commit to push it along.
+    if: github.ref_name == 'main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
