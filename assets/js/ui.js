@@ -116,29 +116,90 @@ export function renderSteps(container, deviceKey) {
    Results
    --------------------------------------------------------------- */
 
-function statTile(value, label, isHeadline) {
-  const tile = document.createElement('div');
-  tile.className = isHeadline ? 'stat stat--headline' : 'stat';
+/**
+ * One summary tile. Every tile is a button that switches the list below to the
+ * matching view - the numbers are the most obvious thing on the screen, so
+ * they are what people tap first.
+ *
+ * The info button is a sibling rather than a child: a button inside a button
+ * is invalid, and nesting it would make the whole tile un-tappable in some
+ * screen readers.
+ */
+function statTile(spec) {
+  const slot = document.createElement('div');
+  slot.className = spec.isHeadline ? 'stat-slot stat-slot--headline' : 'stat-slot';
+
+  const tile = document.createElement('button');
+  tile.type = 'button';
+  tile.className = spec.isHeadline ? 'stat stat--headline' : 'stat';
+  tile.dataset.tabId = spec.tabId;
+  tile.setAttribute('aria-pressed', String(spec.tabId === spec.activeTab));
 
   const valueEl = document.createElement('div');
   valueEl.className = 'stat__value';
-  valueEl.textContent = value.toLocaleString();
+  valueEl.textContent = spec.value.toLocaleString();
 
   const labelEl = document.createElement('div');
   labelEl.className = 'stat__label';
-  labelEl.textContent = label;
+  labelEl.textContent = spec.label;
 
   tile.append(valueEl, labelEl);
-  return tile;
+
+  if (spec.note) {
+    const noteEl = document.createElement('div');
+    noteEl.className = 'stat__note';
+    noteEl.textContent = spec.note;
+    tile.append(noteEl);
+  }
+
+  tile.addEventListener('click', () => spec.onSelect(spec.tabId));
+  slot.append(tile);
+
+  if (spec.onInfo) {
+    const info = document.createElement('button');
+    info.type = 'button';
+    info.className = 'stat__info';
+    info.dataset.info = spec.tabId;
+    // The glyph is wrapped so it can sit above the circle the stylesheet
+    // draws behind it.
+    const glyph = document.createElement('span');
+    glyph.textContent = 'i';
+    glyph.setAttribute('aria-hidden', 'true');
+    info.append(glyph);
+    info.setAttribute('aria-label', spec.infoLabel);
+    info.addEventListener('click', spec.onInfo);
+    slot.append(info);
+  }
+
+  return slot;
 }
 
-export function renderSummary(container, results) {
+/**
+ * `view` carries what the tiles cannot derive themselves: which view is
+ * showing, what to do when one is tapped, and the corrected following count
+ * once the user has told us what their profile says.
+ */
+export function renderSummary(container, results, view) {
+  const { activeTab, onSelect, onInfo } = view;
+  const common = { activeTab, onSelect };
+
   container.replaceChildren(
-    statTile(results.notFollowingBack.length, "Don't follow you back", true),
-    statTile(results.totals.followers, 'Followers', false),
-    statTile(results.totals.following, 'Following', false),
-    statTile(results.fans.length, 'Fans', false),
-    statTile(results.mutuals.length, 'Mutuals', false)
+    statTile({
+      ...common, value: results.notFollowingBack.length,
+      label: "Don't follow you back", tabId: 'notFollowingBack', isHeadline: true,
+    }),
+    statTile({ ...common, value: results.totals.followers, label: 'Followers', tabId: 'followers' }),
+    statTile({
+      ...common,
+      value: view.followingShown ?? results.totals.following,
+      label: 'Following',
+      tabId: 'following',
+      note: view.followingNote,
+      onInfo,
+      infoLabel: 'Why is this number different from your profile?',
+    }),
+    statTile({ ...common, value: results.fans.length, label: 'Fans', tabId: 'fans' }),
+    statTile({ ...common, value: results.mutuals.length, label: 'Mutuals', tabId: 'mutuals' })
   );
 }
 
@@ -235,22 +296,22 @@ function accountRow(record, isHandled, onToggle) {
   const item = document.createElement('li');
   item.className = isHandled ? 'account is-handled' : 'account';
 
-  const avatar = document.createElement('div');
+  const avatar = document.createElement('span');
   avatar.className = 'avatar';
   const hue = avatarHue(record.key);
   avatar.style.background = `hsl(${hue} 55% 42%)`;
   avatar.setAttribute('aria-hidden', 'true');
   avatar.textContent = initialsFor(record.username);
 
-  const body = document.createElement('div');
+  const body = document.createElement('span');
   body.className = 'account__body';
 
-  const name = document.createElement('div');
+  const name = document.createElement('span');
   name.className = 'account__name';
   name.textContent = `@${record.username}`; // textContent: never trust this string.
 
   const when = formatWhen(record);
-  const meta = document.createElement('div');
+  const meta = document.createElement('span');
   meta.className = 'account__meta';
 
   // The request/blocked/favourite files carry a display name that the
@@ -266,14 +327,6 @@ function accountRow(record, isHandled, onToggle) {
 
   body.append(name, meta);
 
-  const visit = document.createElement('a');
-  visit.className = 'account__visit';
-  visit.href = record.href; // Rebuilt in parse.js from the username alone.
-  visit.target = '_blank';
-  visit.rel = 'noopener noreferrer';
-  visit.textContent = 'Open';
-  visit.setAttribute('aria-label', `Open @${record.username} on Instagram`);
-
   const checkWrap = document.createElement('label');
   checkWrap.className = 'account__check';
   checkWrap.title = 'Mark as handled';
@@ -286,9 +339,46 @@ function accountRow(record, isHandled, onToggle) {
     item.classList.toggle('is-handled', checkbox.checked);
     onToggle(record.key, checkbox.checked);
   });
-
   checkWrap.append(checkbox);
-  item.append(avatar, body, visit, checkWrap);
+
+  /**
+   * Opening a profile is how you deal with someone, so it ticks the box for
+   * you - working through 94 accounts is otherwise two taps each, and the one
+   * people forget is the second. Ticking is never undone here, so a row you
+   * deliberately unticked stays unticked when you visit it again.
+   */
+  function markHandled() {
+    if (checkbox.checked) return;
+    checkbox.checked = true;
+    item.classList.add('is-handled');
+    onToggle(record.key, true);
+  }
+
+  // Two ways to the same profile: the whole avatar-and-name block, which is
+  // what people instinctively tap, and the explicit Open button.
+  function profileLink(className) {
+    const link = document.createElement('a');
+    link.className = className;
+    link.href = record.href; // Rebuilt in parse.js from the username alone.
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.addEventListener('click', markHandled);
+    // A middle-click opens the profile too, and never fires a click event.
+    link.addEventListener('auxclick', markHandled);
+    return link;
+  }
+
+  // Deliberately unlabelled: an aria-label here would replace the name and the
+  // follow date with one canned sentence, and the date is worth hearing. The
+  // Open button next to it says what these links do.
+  const identity = profileLink('account__link');
+  identity.append(avatar, body);
+
+  const visit = profileLink('account__visit');
+  visit.textContent = 'Open';
+  visit.setAttribute('aria-label', `Open @${record.username} on Instagram`);
+
+  item.append(identity, visit, checkWrap);
   return item;
 }
 

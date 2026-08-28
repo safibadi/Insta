@@ -186,6 +186,60 @@
 
 </main>
 
+<!--
+  The following-count explainer. This used to be a paragraph under the stats,
+  where it cost five lines of the results screen to answer a question most
+  people only ask once. It now lives behind the "i" on the Following tile, and
+  it asks for the number on the user's profile so the answer can be exact
+  ("14 of these are deleted") instead of general ("some of these may be").
+-->
+<dialog class="sheet" id="count-dialog" aria-labelledby="count-dialog-title">
+  <div class="sheet__head">
+    <h2 class="sheet__title" id="count-dialog-title">About your following count</h2>
+    <button class="btn btn--ghost sheet__close" type="button" id="count-close" aria-label="Close">✕</button>
+  </div>
+
+  <div class="sheet__panel" data-panel="intro">
+    <p class="sheet__counts" id="count-dialog-counts"></p>
+    <p>
+      Your profile may show a lower following number. The export keeps listing
+      accounts that have since been deleted or deactivated, and Instagram stops
+      counting those. They can't follow you back, so they sit in
+      <b>Doesn't follow back</b> and inflate it. Opening one shows
+      “Sorry, this page isn't available”.
+    </p>
+    <p class="sheet__question" id="count-question"></p>
+    <div class="sheet__actions">
+      <button class="btn btn--primary" type="button" id="count-differs">Yes, it's different</button>
+      <button class="btn btn--ghost" type="button" id="count-matches">No, they match</button>
+    </div>
+  </div>
+
+  <div class="sheet__panel" data-panel="ask" hidden>
+    <p>
+      <label for="count-input">What following number does your profile show?</label>
+    </p>
+    <p class="muted sheet__hint">
+      Open your Instagram profile and read the number under “Following”.
+    </p>
+    <input class="input" type="number" id="count-input" inputmode="numeric"
+           min="0" step="1" autocomplete="off" placeholder="e.g. 518">
+    <p class="sheet__error" id="count-error" role="alert"></p>
+    <div class="sheet__actions">
+      <button class="btn btn--primary" type="button" id="count-save">Work it out</button>
+      <button class="btn btn--ghost" type="button" id="count-back">Back</button>
+    </div>
+  </div>
+
+  <div class="sheet__panel" data-panel="result" hidden>
+    <p id="count-result"></p>
+    <div class="sheet__actions">
+      <button class="btn btn--primary" type="button" id="count-show-list">Show that list</button>
+      <button class="btn btn--ghost" type="button" id="count-redo">Change the number</button>
+    </div>
+  </div>
+</dialog>
+
 <footer class="footer">
   <p>
     Not affiliated with Instagram or Meta.
