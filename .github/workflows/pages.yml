@@ -65,7 +65,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # enablement: true turns Pages on via the API on the first run, so the
+      # only manual setup left is choosing the source in repo settings - and
+      # not even that, since a workflow-built artifact implies it.
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       # There is no build step - the site is plain HTML, CSS and ES modules.
       # Staged into a clean directory so the test harness and CI config aren't
