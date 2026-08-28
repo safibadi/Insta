@@ -127,8 +127,14 @@ Checked against a real export where the profile read 518 following and the file
 listed 532: the followers count matched exactly (441/441), every one of the 532
 entries was a distinct, valid handle, and none of the difference was explained
 by duplicates, pending requests, or recently-unfollowed accounts. The remaining
-explanation is accounts Instagram still has on file but no longer counts, which
-cannot be confirmed from the export alone.
+explanation is accounts Instagram still has on file but no longer counts.
+
+That has since been confirmed directly: opening one of the resulting
+"doesn't follow back" profiles returns Instagram's *"Sorry, this page isn't
+available."* The account was present in `following.json`, absent from
+`followers_1.json`, and so landed in the headline list exactly as the
+explanation predicts. One confirmed case does not prove the whole gap is that,
+but the mechanism is real rather than presumed.
 
 It matters for reading the results: accounts like that never follow you back,
 so they land in "Doesn't follow back" and inflate it by however many there are.

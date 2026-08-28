@@ -230,21 +230,22 @@ async function handleFiles(fileList) {
    --------------------------------------------------------------- */
 
 /**
- * Instagram's export routinely lists a few more accounts than the profile
- * counter shows, because accounts that were deactivated or deleted stay in the
- * file while dropping out of the live count. Worth saying plainly - otherwise
- * the first thing anyone does is compare the two numbers and conclude the tool
- * is broken.
+ * Instagram's export lists more accounts than the profile counter shows,
+ * because deleted and deactivated accounts stay in the file after they stop
+ * being counted. Confirmed by opening one from a real export's results: the
+ * profile returns Instagram's "page isn't available".
+ *
+ * Worth stating up front - otherwise the first thing anyone does is compare
+ * the two numbers and conclude the tool is broken.
  */
 function renderCountNote(container, results) {
   container.textContent =
     `Counted from your export file: ${results.totals.followers.toLocaleString()} followers, ` +
     `${results.totals.following.toLocaleString()} following. ` +
-    'Your profile may show a lower following number. The export lists every ' +
-    'account on file, including ones Instagram has stopped counting — usually ' +
-    'because they were deactivated or deleted. Those accounts appear in the ' +
-    'list below and never follow you back, so they inflate the count above. ' +
-    'Tapping Open on one will show whether it still exists.';
+    'Your profile may show a lower following number — the export keeps listing ' +
+    'accounts that have since been deleted or deactivated, and Instagram stops ' +
+    "counting those. They can't follow you back, so they sit in the list below " +
+    'and inflate it. Opening one shows “Sorry, this page isn\'t available”.';
 }
 
 function buildTabs(results) {
