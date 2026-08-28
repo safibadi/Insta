@@ -96,7 +96,6 @@ export const DEVICES = {
     retrieveSteps: [
       'When the email arrives, go back to ☰ <b>Settings and activity</b> menu →  <b>Accounts Centre</b> →  <b>Your information and permissions</b> →  <b>Export your information</b> — your ' +
         'file is listed under <b>Available downloads</b>. Tap <b>Download</b>.',
-      'The ZIP saves to the <b>Files</b> app → <b>Downloads</b>.',
       'Come back here, tap <b>Choose file</b>, and pick the ZIP.',
       'If picking the ZIP does not work, open <b>Files</b>, long-press it, tap ' +
         '<b>Uncompress</b>, then select <b>followers_1.json</b> and ' +
