@@ -117,6 +117,23 @@ Files are matched by name wherever they sit in the archive, because Instagram
 has moved the folder between `connections/followers_and_following/` and
 `followers_and_following/` across export versions.
 
+### A note on counts
+
+The numbers here come from your export file, and can sit slightly above what
+your Instagram profile shows. That gap is between Instagram's export and
+Instagram's own counter — it is not introduced by this tool.
+
+Checked against a real export where the profile read 518 following and the file
+listed 532: the followers count matched exactly (441/441), every one of the 532
+entries was a distinct, valid handle, and none of the difference was explained
+by duplicates, pending requests, or recently-unfollowed accounts. The remaining
+explanation is accounts Instagram still has on file but no longer counts, which
+cannot be confirmed from the export alone.
+
+It matters for reading the results: accounts like that never follow you back,
+so they land in "Doesn't follow back" and inflate it by however many there are.
+Mutuals are unaffected, since an account that follows you back is live.
+
 ## What you get
 
 - **Doesn't follow back** — the headline: accounts you follow that don't follow you

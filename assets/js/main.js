@@ -238,10 +238,13 @@ async function handleFiles(fileList) {
  */
 function renderCountNote(container, results) {
   container.textContent =
-    `Counted from your export: ${results.totals.followers.toLocaleString()} followers, ` +
+    `Counted from your export file: ${results.totals.followers.toLocaleString()} followers, ` +
     `${results.totals.following.toLocaleString()} following. ` +
-    'These can run slightly above the numbers on your profile — deactivated and ' +
-    'deleted accounts stay in the export after they stop counting.';
+    'Your profile may show a lower following number. The export lists every ' +
+    'account on file, including ones Instagram has stopped counting — usually ' +
+    'because they were deactivated or deleted. Those accounts appear in the ' +
+    'list below and never follow you back, so they inflate the count above. ' +
+    'Tapping Open on one will show whether it still exists.';
 }
 
 function buildTabs(results) {
