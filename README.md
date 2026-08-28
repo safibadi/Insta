@@ -214,24 +214,64 @@ scrolling, that tap targets are at least 44px, that a username shaped like
 `<script>` renders as text rather than executing, and that nothing touches the
 network.
 
-## Deploying — free, no domain or hosting fee
+## Deploying
 
-This repo is set up for **GitHub Pages**. Push to `main` and the workflow in
-`.github/workflows/pages.yml` runs the tests and publishes.
+The site is hosted on **Cloudflare Pages**, built straight from this
+repository's Git integration. Push to `main` and Cloudflare builds and
+publishes; there is no deploy step in GitHub Actions.
 
-**One-time setup, and it must be done by hand first:** repo **Settings → Pages
-→ Source: GitHub Actions**.
+Cloudflare Pages build settings:
 
-There is no way to automate this step. Creating a Pages site through the API
-needs repository *administration* permission, which a workflow's `GITHUB_TOKEN`
-cannot be granted at any `permissions:` setting — `configure-pages` with
-`enablement: true` fails with `Resource not accessible by integration`
-regardless. Until that dropdown is set, every deploy fails at the first step.
+| Setting | Value |
+|---|---|
+| Build command | `./build.sh` |
+| Build output directory | `_site` |
+| Root directory | `/` |
 
-Note also that Pages will not serve a **private** repo on a free account; that
-needs GitHub Pro. Public repos are unrestricted.
+`build.sh` copies `index.html`, `assets/`, the README and the licence into
+`_site/`. There is no compile step — it exists only so that the test harness
+and the CI config aren't served alongside the app. The repository is private;
+the deployed site is not, and only what lands in `_site/` is deployed. CI
+checks that on every push, so a change that would leak `tests/` into the
+published output fails before it reaches the host.
 
-Your site: `https://<your-username>.github.io/<repo>/`
+Cloudflare Pages serves private repositories on the free plan, which GitHub
+Pages does not — that is the reason for the move.
+
+### What CI does now
+
+`.github/workflows/ci.yml` runs the unit and browser suites and the build
+check on every push and pull request. It no longer deploys anything.
+
+One consequence worth knowing: because Cloudflare deploys from the Git
+integration, a push to `main` publishes whether or not CI is green — the two
+run in parallel rather than in sequence. If you want tests to gate the deploy,
+turn the Git integration off and publish from CI with
+[`wrangler pages deploy`](https://developers.cloudflare.com/workers/wrangler/commands/#pages-deploy)
+in a job that `needs: test`, which requires a `CLOUDFLARE_API_TOKEN` and
+`CLOUDFLARE_ACCOUNT_ID` in the repository secrets.
+
+### Setting it up from scratch
+
+1. Sign up at <https://dash.cloudflare.com> (free, no card).
+2. **Workers & Pages** → **Create** → **Pages** → **Connect to Git**.
+3. Authorize GitHub and pick this repo (private repos are fine).
+4. Enter the build settings from the table above.
+5. Deploy. You get `https://<project>.pages.dev`, and can attach your own
+   domain for free.
+
+### A note on analytics
+
+Cloudflare's Web Analytics beacon can't be used here. It is a third-party
+script, so the page's own `script-src 'self'` refuses to load it — adding the
+snippet doesn't produce analytics, it produces a console error and a failing
+test. Loosening the CSP to admit it would cost the guarantee the whole tool is
+built on, so the beacon stays out.
+
+The request analytics in the Cloudflare dashboard (**Workers & Pages** → your
+project → **Metrics**) need no beacon at all, because they are measured at the
+edge rather than in the visitor's browser. That is the way to get traffic
+numbers here.
 
 ### Other genuinely free options
 
@@ -239,29 +279,18 @@ All of these cost $0 with no credit card and give you a free subdomain.
 
 | Host | Free URL | Private repo? | Notes |
 |---|---|---|---|
-| **GitHub Pages** | `*.github.io` | ✗ — needs paid Pro | Free forever for public repos. Already wired up here. |
-| **Cloudflare Pages** | `*.pages.dev` | ✓ on the free plan | Unlimited bandwidth, 500 builds/month. Best pick if you want the source private. |
+| **Cloudflare Pages** | `*.pages.dev` | ✓ on the free plan | Unlimited bandwidth, 500 builds/month. What this repo uses. |
+| GitHub Pages | `*.github.io` | ✗ — needs paid Pro | Free forever for public repos. |
 | Netlify | `*.netlify.app` | ✓ | 100 GB bandwidth, 300 build minutes/month. Drag-and-drop deploys. |
 | Vercel Hobby | `*.vercel.app` | ✓ | Free, but **non-commercial use only** under their fair-use terms. Overkill for a static page. |
 | GitLab / Codeberg Pages, Surge.sh | subdomain | varies | Solid fallbacks. |
 
-**Note on private repos:** GitHub Pages only serves from public repos on a free
-account — private repos need GitHub Pro. Cloudflare Pages has no such
-restriction. Either way the *deployed site* is public; private only hides the
-source. Since this is a privacy tool with no secrets in it, a public repo is
-arguably a feature — anyone can verify it does what it claims.
+Either way the *deployed site* is public; private only hides the source. Since
+this is a privacy tool with no secrets in it, a public repo is arguably a
+feature — anyone can verify it does what it claims.
 
 **On v0:** that's Vercel's AI UI-generation product with limited free credits,
 not a hosting plan. Not what you want for this.
-
-### Deploying to Cloudflare Pages instead
-
-1. Sign up at <https://dash.cloudflare.com> (free, no card).
-2. **Workers & Pages** → **Create** → **Pages** → **Connect to Git**.
-3. Authorize GitHub and pick this repo (private repos are fine).
-4. Build settings: leave the build command **empty**, set output directory to
-   `/`. There is no build step.
-5. Deploy.
 
 Because the site is plain static files, moving between any of these hosts is
 just copying the folder.
@@ -280,6 +309,7 @@ assets/js/steps.js          per-device export instructions
 assets/js/ui.js             rendering
 assets/js/main.js           routing and wiring
 tests/                      fixture generator, unit suite, e2e suite
+build.sh                    stages the publishable site into _site/
 ```
 
 ### Why the ZIP reader is hand-written

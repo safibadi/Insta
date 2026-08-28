@@ -42,7 +42,6 @@ const dom = {
   startOver: document.getElementById('start-over'),
   countDialog: document.getElementById('count-dialog'),
   countPanels: [...document.querySelectorAll('#count-dialog [data-panel]')],
-  countCounts: document.getElementById('count-dialog-counts'),
   countQuestion: document.getElementById('count-question'),
   countInput: document.getElementById('count-input'),
   countError: document.getElementById('count-error'),
@@ -292,10 +291,9 @@ function showCountPanel(name) {
 }
 
 function openCountDialog() {
-  const { followers, following } = state.results.totals;
-  // dom.countCounts.textContent =
-  //   `Counted from your export file: ${followers.toLocaleString()} followers, ` +
-  //   `${following.toLocaleString()} following.`;
+  // The dialog opens on the question, not on a restatement of the counts: the
+  // tiles behind it are already showing them.
+  const { following } = state.results.totals;
   dom.countQuestion.textContent =
     `Is the following count on your profile different from ${following.toLocaleString()}?`;
 

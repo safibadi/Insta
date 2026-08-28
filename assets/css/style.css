@@ -497,7 +497,6 @@ h2[tabindex="-1"]:focus-visible { outline: none; }
   font-size: 1rem;
   line-height: 1;
 }
-.sheet__counts { font-weight: 600; color: var(--text); }
 .sheet__question { font-weight: 600; }
 .sheet__hint { font-size: .82rem; margin-bottom: .5rem; }
 .sheet__error { color: var(--danger); font-weight: 600; font-size: .85rem; margin: .5rem 0 0; }

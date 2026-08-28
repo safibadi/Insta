@@ -227,9 +227,11 @@ check('the dialog stays closed until asked for', await page.isHidden('#count-dia
 await page.click('.stat__info');
 check('the "i" on the Following tile opens the explainer',
   await page.isVisible('#count-dialog'));
-check('...carrying the counts that used to sit on the results screen',
-  (await page.textContent('#count-dialog-counts')).includes('5 followers, 7 following'),
-  await page.textContent('#count-dialog-counts'));
+// The dialog deliberately does not restate the counts - the tiles behind it
+// already show them, so it opens on the question instead.
+check('...opening on the question rather than restating the counts',
+  (await page.textContent('#count-question')).includes('7'),
+  await page.textContent('#count-question'));
 check('...and the deleted-account explanation with it',
   (await page.textContent('#count-dialog')).includes("page isn't available"));
 

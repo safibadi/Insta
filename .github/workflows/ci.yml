@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Deploying is Cloudflare Pages' job, not this workflow's - Cloudflare builds
+# and publishes straight from the Git integration on every push. Nothing here
+# touches the live site, so an in-flight run is safe to cancel when a newer
+# commit supersedes it.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Playwright and Chromium
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+
+      - name: Generate fixtures
+        run: python3 tests/make-fixtures.py
+
+      - name: Unit tests (parsing and analysis)
+        run: node tests/run-unit.mjs
+
+      - name: End-to-end tests (real browser, incl. the no-network assertion)
+        run: node tests/run-e2e.mjs
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: tests/screenshot-*.png
+          if-no-files-found: ignore
+
+  # Checks that what Cloudflare Pages will publish is exactly the site and
+  # nothing else - the build script is the contract between this repo and the
+  # host, so a change that breaks it should fail here rather than at deploy time.
+  build:
+    name: Build (what Cloudflare Pages publishes)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Stage the site
+        run: ./build.sh
+
+      - name: The test harness and CI config must not be published
+        run: |
+          for leaked in _site/tests _site/.github _site/build.sh; do
+            if [ -e "$leaked" ]; then
+              echo "::error::$leaked ended up in the published output"
+              exit 1
+            fi
+          done
+          test -f _site/index.html
+          test -f _site/assets/js/main.js
+          echo "Publishable output:"
+          find _site -type f | sort

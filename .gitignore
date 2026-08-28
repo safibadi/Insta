@@ -3,5 +3,9 @@
 tests/fixtures/
 tests/screenshot-*.png
 
+# Cloudflare Pages builds this with build.sh; it is derived from the tracked
+# files and never committed.
+_site/
+
 node_modules/
 .DS_Store
