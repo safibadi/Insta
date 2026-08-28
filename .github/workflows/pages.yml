@@ -53,10 +53,11 @@ jobs:
   deploy:
     name: Deploy to GitHub Pages
     needs: test
-    # Publishes from whatever the repository's default branch actually is,
-    # rather than assuming it is called "main" - this repo had no commits when
-    # the workflow was written, so the default branch was not yet decided.
-    if: github.ref_name == github.event.repository.default_branch && github.event_name == 'push'
+    # Publishes from main. Deliberately not keyed to the repository's default
+    # branch setting: this repo was created empty, so GitHub made whichever
+    # branch was pushed first the default, which is not the branch we release
+    # from.
+    if: github.ref_name == 'main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
