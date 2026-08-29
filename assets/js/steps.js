@@ -38,7 +38,8 @@ export function supportsFolderUpload() {
  */
 
 const REQUEST_STEPS_APP = [
-  'Open Instagram, go to your profile and tap the ☰ <b>Settings and activity</b> menu (top right).',
+  'Open Instagram, go to your profile and tap the ☰ ' +
+    '<b>Settings and activity</b> menu (top right).',
   'At the top, under <i>Your account</i>, tap <b>Accounts Centre</b>.',
   'Tap <b>Your information and permissions</b>.',
   'Tap <b>Export your information</b>, then <b>Create export</b>.',
@@ -70,8 +71,10 @@ const DELIVERY_STEPS = [
   'Tap <b>Date range</b> → <b>All time</b> → <b>Save</b>.',
   'Tap <b>Format</b> → <b>JSON</b> → <b>Save</b>. (HTML works here too, but ' +
     'JSON gives exact follow dates.)',
-  'Tap <b>Start export</b>. You will recive email with subject "Your Meta download request is in progress".',
-  'You will recive second email with subject "Your Meta information download is ready" — often within minutes. ' +
+  'Tap <b>Start export</b>. You will receive an email with the subject ' +
+    '“Your Meta download request is in progress”.',
+  'You will receive a second email with the subject “Your Meta information ' +
+    'download is ready” — often within minutes. ' +
     '<b>You then have 4 days to download it.</b>',
 ];
 
@@ -82,8 +85,10 @@ export const DEVICES = {
     chooseStep: CHOOSE_DATA_STEP,
     deliverySteps: DELIVERY_STEPS,
     retrieveSteps: [
-      'When the email arrives, go back to ☰ <b>Settings and activity</b> menu →  <b>Accounts Centre</b> → <b>Your information and permissions</b> → <b>Export your information</b> — your ' +
-        'file is listed under <b>Available downloads</b>. Tap <b>Download</b>.',
+      'When the email arrives, go back to ☰ <b>Settings and activity</b> menu → ' +
+        '<b>Accounts Centre</b> → <b>Your information and permissions</b> → ' +
+        '<b>Export your information</b> — your file is listed under ' +
+        '<b>Available downloads</b>. Tap <b>Download</b>.',
       'The ZIP saves to <b>Files</b> → <b>Downloads</b>.',
       'Come back here, tap <b>Choose file</b>, and pick the ZIP. No need to unzip it.',
     ],
@@ -94,8 +99,10 @@ export const DEVICES = {
     chooseStep: CHOOSE_DATA_STEP,
     deliverySteps: DELIVERY_STEPS,
     retrieveSteps: [
-      'When the email arrives, go back to ☰ <b>Settings and activity</b> menu →  <b>Accounts Centre</b> →  <b>Your information and permissions</b> →  <b>Export your information</b> — your ' +
-        'file is listed under <b>Available downloads</b>. Tap <b>Download</b>.',
+      'When the email arrives, go back to ☰ <b>Settings and activity</b> menu → ' +
+        '<b>Accounts Centre</b> → <b>Your information and permissions</b> → ' +
+        '<b>Export your information</b> — your file is listed under ' +
+        '<b>Available downloads</b>. Tap <b>Download</b>.',
       'Come back here, tap <b>Choose file</b>, and pick the ZIP.',
       'If picking the ZIP does not work, open <b>Files</b>, long-press it, tap ' +
         '<b>Uncompress</b>, then select <b>followers_1.json</b> and ' +
@@ -108,8 +115,10 @@ export const DEVICES = {
     chooseStep: CHOOSE_DATA_STEP,
     deliverySteps: DELIVERY_STEPS,
     retrieveSteps: [
-      'When the email arrives, go back to ☰ <b>Settings and activity</b> menu →  <b>Accounts Centre</b> → <b>Your information and permissions</b> → <b>Export your information</b> ' +
-        'download your file from <b>Available downloads</b>.',
+      'When the email arrives, go back to ☰ <b>Settings and activity</b> menu → ' +
+        '<b>Accounts Centre</b> → <b>Your information and permissions</b> → ' +
+        '<b>Export your information</b> and download your file from ' +
+        '<b>Available downloads</b>.',
       'Come back here and drag the ZIP onto the upload box — or unzip it first ' +
         'and drop in the whole folder.',
     ],
