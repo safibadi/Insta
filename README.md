@@ -45,7 +45,8 @@ never contacts any origin but its own.
 
 The request steps are **identical on Android and iPhone** — both go through the
 same Meta Accounts Center screens. Only the last part, finding the downloaded
-file, differs.
+file, differs. **On a computer the flow is different enough to be written out
+separately** — see below.
 
 Direct link to the download page:
 <https://accountscenter.instagram.com/info_and_permissions/dyi/>
@@ -73,8 +74,34 @@ Direct link to the download page:
 > That said, a full export still works here — see below.
 
 These steps are transcribed from the real iPhone flow (Instagram, August 2026).
-Android and desktop use the same Accounts Centre screens, since it is one
-shared web flow, but have not been walked through on a device.
+Android uses the same Accounts Centre screens, since it is one shared web flow,
+but has not been walked through on a device.
+
+### On a computer
+
+The web UI reaches the same Accounts Center through a different shell, uses US
+spelling, splits one step across two screens and adds a password prompt. Walked
+through in a desktop browser, August 2026:
+
+1. Sign in at instagram.com, then in the left sidebar click **More** (☰, at the
+   bottom) → **Settings**. There is no *Settings and activity* menu on the web.
+2. Settings opens on *Edit profile*. In the **Accounts Center** box at the top of
+   the sidebar, click **See more in Accounts Center** — *Your information and
+   permissions* is not in the Instagram list itself.
+3. **Your information and permissions** → **Export your information** →
+   **Create export**
+4. **Choose a profile** → your Instagram profile → **Choose where to export** →
+   **Export to device**, which lands you on **Confirm your export**
+5. **Customize information** — eight sections, each with its own **Clear all**;
+   click every one (the link flips to *Select all*, which is how you know the
+   section is empty), then under **Connections** tick **Followers and
+   following** — *that one only* → **Save**
+6. **Date range** → **All time** → **Save** (it defaults to *Last year*)
+7. **Format** → **JSON** → **Save** (it defaults to *HTML*)
+8. **Start export**, then **re-enter your password** when Instagram asks, and
+   click **Continue**
+9. The request appears under **Requested** on the same screen, and the email
+   follows
 
 Then:
 

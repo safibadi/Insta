@@ -400,6 +400,21 @@ await deskPage.goto(`${BASE}/index.html`);
 await deskPage.click('button[data-go="how"]');
 check('Computer tab auto-selected on desktop',
   (await deskPage.getAttribute('[data-device="desktop"]', 'aria-selected')) === 'true');
+
+// The Computer tab used to render the phone strings verbatim, so it told
+// desktop users to "tap" things and named menus the web UI does not have.
+const deskSteps = await deskPage.textContent('#steps-content');
+check('Computer steps do not tell you to tap',
+  !/\btap\b/i.test(deskSteps), deskSteps);
+check('Computer steps route through the sidebar More menu',
+  deskSteps.includes('More') && deskSteps.includes('See more in Accounts Center'),
+  deskSteps);
+check('Computer steps warn about the password re-prompt',
+  /re-enter your password/i.test(deskSteps), deskSteps);
+check('Computer steps use the spelling the web UI actually shows',
+  deskSteps.includes('Customize information') && !/Accounts Centre/.test(deskSteps),
+  deskSteps);
+
 await deskPage.click('button[data-go="upload"]');
 await deskPage.waitForSelector('[data-screen="upload"]:not([hidden])');
 check('folder picker offered on desktop', await deskPage.isVisible('#pick-folder'));
