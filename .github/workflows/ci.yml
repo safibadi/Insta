@@ -9,7 +9,7 @@ on:
 permissions:
   contents: read
 
-# Deploying is Cloudflare Pages' job, not this workflow's - Cloudflare builds
+# Deploying is Cloudflare's job, not this workflow's - Cloudflare builds
 # and publishes straight from the Git integration on every push. Nothing here
 # touches the live site, so an in-flight run is safe to cancel when a newer
 # commit supersedes it.
@@ -50,11 +50,11 @@ jobs:
           path: tests/screenshot-*.png
           if-no-files-found: ignore
 
-  # Checks that what Cloudflare Pages will publish is exactly the site and
+  # Checks that what Cloudflare will publish is exactly the site and
   # nothing else - the build script is the contract between this repo and the
   # host, so a change that breaks it should fail here rather than at deploy time.
   build:
-    name: Build (what Cloudflare Pages publishes)
+    name: Build (what Cloudflare publishes)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -74,3 +74,21 @@ jobs:
           test -f _site/assets/js/main.js
           echo "Publishable output:"
           find _site -type f | sort
+
+      # Cloudflare deploys with `wrangler deploy`, which falls back to
+      # publishing the repository root when it finds no config — that is how
+      # .git/ and tests/ reached the public site. wrangler.jsonc is the fix;
+      # this is the guard that keeps it correct.
+      - name: Cloudflare must publish _site, not the repository root
+        run: |
+          node -e '
+            const fs = require("fs");
+            const raw = fs.readFileSync("wrangler.jsonc", "utf8")
+              .replace(/^\s*\/\/.*$/gm, "");
+            const dir = (JSON.parse(raw).assets || {}).directory;
+            if (dir !== "./_site") {
+              console.error(`::error::wrangler.jsonc publishes ${JSON.stringify(dir)}; it must publish "./_site"`);
+              process.exit(1);
+            }
+            console.log("wrangler.jsonc publishes ./_site");
+          '

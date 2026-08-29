@@ -2,11 +2,11 @@
 #
 # Stages the publishable site into _site/.
 #
-# Cloudflare Pages is pointed at this script (build command `./build.sh`,
-# output directory `_site`) rather than served straight from the repository
-# root, so the test harness, the fixture generator and the CI config are not
-# published alongside the app. The repository is private; the deployed site is
-# not, and only what lands in _site/ is deployed.
+# Cloudflare is pointed at this script (dashboard build command `./build.sh`)
+# and wrangler.jsonc points `assets.directory` at _site/, rather than serving
+# the repository root, so the test harness, the fixture generator, the CI config
+# and .git/ are not published alongside the app. The repository is private; the
+# deployed site is not, and only what lands in _site/ is deployed.
 #
 # There is no compile step - the site is plain HTML, CSS and ES modules. This
 # is a copy, and that is deliberate: it keeps "zero third-party code" something

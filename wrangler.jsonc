@@ -1,0 +1,22 @@
+// Cloudflare deploy config.
+//
+// This file exists so that neither the dashboard nor Wrangler has to guess what
+// to publish. Without it, `wrangler deploy` runs its first-run setup wizard, and
+// in a non-interactive build it silently accepts the default
+// `assets.directory = "."` — which publishes the whole repository root,
+// including .git/ and tests/, to the public site. That is not hypothetical: it
+// is what happened, and .git/config was readable on the live site until this
+// file landed.
+//
+// `assets.directory` must stay in step with build.sh, which stages the
+// publishable site into _site/. CI asserts that it does.
+{
+  "name": "app",
+  "compatibility_date": "2026-08-28",
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": "./_site"
+  }
+}

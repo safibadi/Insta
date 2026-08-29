@@ -216,27 +216,41 @@ network.
 
 ## Deploying
 
-The site is hosted on **Cloudflare Pages**, built straight from this
-repository's Git integration. Push to `main` and Cloudflare builds and
-publishes; there is no deploy step in GitHub Actions.
+The site is hosted on **Cloudflare Workers** — a Worker that serves static
+assets — built straight from this repository's Git integration. Push to `main`
+and Cloudflare builds and publishes; there is no deploy step in GitHub Actions.
 
-Cloudflare Pages build settings:
+There are two pieces of configuration, and which one lives where matters:
 
-| Setting | Value |
-|---|---|
-| Build command | `./build.sh` |
-| Build output directory | `_site` |
-| Root directory | `/` |
+| Where | Setting | Value |
+|---|---|---|
+| Cloudflare dashboard | Build command | `./build.sh` |
+| Cloudflare dashboard | Root directory | `/` |
+| `wrangler.jsonc`, in this repo | `assets.directory` | `./_site` |
+
+A Worker with static assets has no "build output directory" field in the
+dashboard; the published directory lives in `wrangler.jsonc` instead. Keeping it
+in the repo is deliberate — it is reviewable, and it applies identically to
+every branch.
+
+Leaving it out is not a harmless omission. `wrangler deploy` runs a first-run
+setup wizard when it finds no config, and a build has nobody to answer it, so it
+accepts the default `assets.directory = "."` and publishes the repository root —
+`.git/` and `tests/` included — to the public site. That is not hypothetical;
+it happened here, and `.git/config` was readable on the live site until it was
+fixed. `wrangler versions upload`, which Cloudflare runs for non-production
+branches, has no such fallback and simply fails, which is why failing branch
+builds were the first symptom of an already-leaking `main`.
 
 `build.sh` copies `index.html`, `assets/`, the README and the licence into
 `_site/`. There is no compile step — it exists only so that the test harness
 and the CI config aren't served alongside the app. The repository is private;
-the deployed site is not, and only what lands in `_site/` is deployed. CI
-checks that on every push, so a change that would leak `tests/` into the
-published output fails before it reaches the host.
+the deployed site is not, and only what lands in `_site/` is deployed. CI checks
+both halves on every push: that nothing extra lands in `_site/`, and that
+`wrangler.jsonc` still points at `_site/`.
 
-Cloudflare Pages serves private repositories on the free plan, which GitHub
-Pages does not — that is the reason for the move.
+Cloudflare serves private repositories on the free plan, which GitHub Pages does
+not — that is the reason for the move.
 
 ### What CI does now
 
@@ -247,18 +261,20 @@ One consequence worth knowing: because Cloudflare deploys from the Git
 integration, a push to `main` publishes whether or not CI is green — the two
 run in parallel rather than in sequence. If you want tests to gate the deploy,
 turn the Git integration off and publish from CI with
-[`wrangler pages deploy`](https://developers.cloudflare.com/workers/wrangler/commands/#pages-deploy)
+[`wrangler deploy`](https://developers.cloudflare.com/workers/wrangler/commands/#deploy)
 in a job that `needs: test`, which requires a `CLOUDFLARE_API_TOKEN` and
 `CLOUDFLARE_ACCOUNT_ID` in the repository secrets.
 
 ### Setting it up from scratch
 
 1. Sign up at <https://dash.cloudflare.com> (free, no card).
-2. **Workers & Pages** → **Create** → **Pages** → **Connect to Git**.
+2. **Workers & Pages** → **Create** → **Import a repository**.
 3. Authorize GitHub and pick this repo (private repos are fine).
-4. Enter the build settings from the table above.
-5. Deploy. You get `https://<project>.pages.dev`, and can attach your own
-   domain for free.
+4. Set the build command to `./build.sh`. Leave the deploy command at
+   `npx wrangler deploy` — `wrangler.jsonc` is what tells it to publish
+   `_site/` rather than the repository root.
+5. Deploy. You get `https://<name>.<subdomain>.workers.dev`, and can attach your
+   own domain for free.
 
 ### A note on analytics
 
@@ -279,7 +295,7 @@ All of these cost $0 with no credit card and give you a free subdomain.
 
 | Host | Free URL | Private repo? | Notes |
 |---|---|---|---|
-| **Cloudflare Pages** | `*.pages.dev` | ✓ on the free plan | Unlimited bandwidth, 500 builds/month. What this repo uses. |
+| **Cloudflare Workers** | `*.workers.dev` | ✓ on the free plan | Unlimited bandwidth, 500 builds/month. What this repo uses. |
 | GitHub Pages | `*.github.io` | ✗ — needs paid Pro | Free forever for public repos. |
 | Netlify | `*.netlify.app` | ✓ | 100 GB bandwidth, 300 build minutes/month. Drag-and-drop deploys. |
 | Vercel Hobby | `*.vercel.app` | ✓ | Free, but **non-commercial use only** under their fair-use terms. Overkill for a static page. |
