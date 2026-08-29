@@ -58,7 +58,7 @@ const REQUEST_STEPS_APP = [
 const REQUEST_STEPS_WEB = [
   'Open Instagram in your browser and sign in.',
   'In the left sidebar click <b>More</b> (☰, at the bottom), then ' +
-    '<b>Settings</b>. There is no “Settings and activity” menu on the web.',
+    '<b>Settings</b>.',
   'Settings opens on <i>Edit profile</i>. In the <b>Accounts Center</b> box at ' +
     'the top of the sidebar, click <b>See more in Accounts Center</b> — ' +
     '<i>Your information and permissions</i> is not in the Instagram list ' +

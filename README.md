@@ -86,8 +86,7 @@ through in a desktop browser, August 2026:
 1. Sign in at instagram.com, then in the left sidebar click **More** (☰, at the
    bottom) → **Settings**. There is no *Settings and activity* menu on the web.
 2. Settings opens on *Edit profile*. In the **Accounts Center** box at the top of
-   the sidebar, click **See more in Accounts Center** — *Your information and
-   permissions* is not in the Instagram list itself.
+   the sidebar, click **See more in Accounts Center**.
 3. **Your information and permissions** → **Export your information** →
    **Create export**
 4. **Choose a profile** → your Instagram profile → **Choose where to export** →
