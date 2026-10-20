@@ -5,8 +5,8 @@
 # Cloudflare is pointed at this script (dashboard build command `./build.sh`)
 # and wrangler.jsonc points `assets.directory` at _site/, rather than serving
 # the repository root, so the test harness, the fixture generator, the CI config
-# and .git/ are not published alongside the app. The repository is private; the
-# deployed site is not, and only what lands in _site/ is deployed.
+# and .git/ are not published alongside the app. The repository is public;
+# the deployed site is also public, and only what lands in _site/ is deployed.
 #
 # There is no compile step - the site is plain HTML, CSS and ES modules. This
 # is a copy, and that is deliberate: it keeps "zero third-party code" something
