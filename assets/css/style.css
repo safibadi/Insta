@@ -656,6 +656,25 @@ body:has(.screen--hero:not([hidden])) .footer { display: none; }
 }
 
 
+/* Results preview: show the actual app UI without crowding the compact hero. */
+.hero-preview { display:grid; grid-template-columns:minmax(0,1fr); gap:1rem; align-items:start; margin:1.5rem auto 0; max-width:56rem; text-align:left; }
+.hero-preview__copy { text-align:center; }
+.hero-preview__copy h2 { font-size:1.25rem; margin-bottom:.45rem; }
+.hero-preview__copy p { color:var(--text-muted); font-size:.9rem; margin-bottom:.6rem; }
+.hero-preview__privacy { font-size:.8rem !important; }
+.hero-preview__figure { margin:0 auto; width:min(100%,22rem); }
+.hero-preview__figure img { display:block; width:100%; height:auto; border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); }
+.hero-preview__figure figcaption { margin-top:.4rem; color:var(--text-muted); font-size:.72rem; text-align:center; }
+@media (min-width:900px) {
+  .screen--hero { padding-left:2rem; padding-right:2rem; }
+  .hero { max-width:68rem; }
+  .hero-preview { grid-template-columns:minmax(15rem,.8fr) minmax(20rem,1fr); gap:2rem; align-items:center; }
+  .hero-preview__copy { text-align:left; }
+  .hero-preview__copy h2 { font-size:1.5rem; }
+  .hero-preview__figure { width:min(100%,23rem); }
+}
+@media (max-width:899px) { .screen--hero { align-items:flex-start; } .hero { padding-top:1rem; } }
+
 /* Public source link on the landing screen. Keep it easy to tap without
    pushing the primary flow below the fold on compact phones. */
 .hero__source {
