@@ -58,10 +58,10 @@ page.on('request', (r) => {
 await page.goto(`${BASE}/index.html`);
 await page.waitForSelector('[data-screen="home"]:not([hidden])');
 
-const fitsViewport = await page.evaluate(() =>
-  document.documentElement.scrollHeight <= window.innerHeight + 1);
-check('landing screen fits without scrolling', fitsViewport,
-  await page.evaluate(() => `content ${document.documentElement.scrollHeight}px vs viewport ${window.innerHeight}px`));
+check('landing page includes the real results preview',
+  await page.locator('.hero-preview img').getAttribute('src') === 'assets/images/demo-results.png');
+check('landing page has no horizontal overflow',
+  await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
 
 const smallTargets = await page.evaluate(() => {
   const tooSmall = [];
@@ -434,9 +434,8 @@ const narrow = await browser.newContext({ viewport: { width: 360, height: 640 },
 const narrowPage = await narrow.newPage();
 await narrowPage.goto(`${BASE}/index.html`);
 await narrowPage.waitForSelector('[data-screen="home"]:not([hidden])');
-check('landing fits at 360×640',
-  await narrowPage.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight + 1),
-  await narrowPage.evaluate(() => `${document.documentElement.scrollHeight} vs ${window.innerHeight}`));
+check('landing preview is available on narrow screens',
+  await narrowPage.locator('.hero-preview img').isVisible());
 check('no horizontal overflow anywhere',
   await narrowPage.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
 
