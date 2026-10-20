@@ -270,8 +270,8 @@ builds were the first symptom of an already-leaking `main`.
 
 `build.sh` copies `index.html`, `assets/`, the README and the licence into
 `_site/`. There is no compile step — it exists only so that the test harness
-and the CI config aren't served alongside the app. The repository is private;
-the deployed site is not, and only what lands in `_site/` is deployed. CI checks
+and the CI config aren't served alongside the app. The repository and deployed
+site are both public; only what lands in `_site/` is deployed. CI checks
 both halves on every push: that nothing extra lands in `_site/`, and that
 `wrangler.jsonc` still points at `_site/`.
 
