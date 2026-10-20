@@ -654,3 +654,37 @@ body:has(.screen--hero:not([hidden])) .footer { display: none; }
 @media (min-width: 640px) {
   .badges { flex-direction: row; justify-content: center; flex-wrap: wrap; }
 }
+
+
+/* Public source link on the landing screen. Keep it easy to tap without
+   pushing the primary flow below the fold on compact phones. */
+.hero__source {
+  margin: .25rem 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .1rem;
+  font-size: .78rem;
+  color: var(--text-muted);
+}
+.hero__source a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 .5rem;
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: .15em;
+}
+.hero__source span { font-size: .72rem; }
+
+@media (max-height: 700px) and (max-width: 559px) {
+  .hero__lede { margin-bottom: .65rem; }
+  .badges { gap: .25rem; margin-bottom: .7rem; }
+  .badge { padding-top: .25rem; padding-bottom: .25rem; }
+  .how-strip { margin-top: .7rem; margin-bottom: .5rem; }
+  .hero__title { margin-bottom: .35rem; }
+  .hero__source span { display: none; }
+}
