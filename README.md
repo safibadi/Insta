@@ -175,6 +175,16 @@ your profile's number, with the export figure kept underneath it. The tool
 can't tell you *which* rows those are, only how many, since a deleted account
 looks like any other line in the file.
 
+## See the result
+
+The screenshot below shows the real results screen using **fictional demo accounts**. It is captured from the app itself; no personal Instagram data is included.
+
+![Instagram non-followers checker results using fictional demo data](assets/images/demo-results.png)
+
+Use the summary tiles to switch between non-followers, followers, following, fans and mutuals. Search, sort, copy usernames, export a CSV, and keep a local checklist as you work through the list.
+
+---
+
 ## What you get
 
 - **Doesn't follow back** — the headline: accounts you follow that don't follow you
