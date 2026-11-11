@@ -60,6 +60,11 @@ await page.waitForSelector('[data-screen="home"]:not([hidden])');
 
 check('landing page includes the real results preview',
   await page.locator('.hero-preview img').getAttribute('src') === 'assets/images/demo-results.png');
+await page.locator('.hero-preview img').evaluate((img) =>
+  img.complete && img.naturalWidth > 0 && img.naturalHeight > 0);
+check('landing preview image decodes successfully',
+  await page.locator('.hero-preview img').evaluate((img) =>
+    img.complete && img.naturalWidth === 360 && img.naturalHeight === 994));
 check('landing page has no horizontal overflow',
   await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
 
@@ -434,8 +439,11 @@ const narrow = await browser.newContext({ viewport: { width: 360, height: 640 },
 const narrowPage = await narrow.newPage();
 await narrowPage.goto(`${BASE}/index.html`);
 await narrowPage.waitForSelector('[data-screen="home"]:not([hidden])');
-check('landing preview is available on narrow screens',
-  await narrowPage.locator('.hero-preview img').isVisible());
+await narrowPage.locator('.hero-preview img').evaluate((img) =>
+  img.complete && img.naturalWidth > 0 && img.naturalHeight > 0);
+check('landing preview is available and decoded on narrow screens',
+  await narrowPage.locator('.hero-preview img').evaluate((img) =>
+    img.complete && img.naturalWidth === 360 && img.naturalHeight === 994));
 check('no horizontal overflow anywhere',
   await narrowPage.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
 
