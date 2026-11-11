@@ -257,6 +257,7 @@ There are two pieces of configuration, and which one lives where matters:
 | Where | Setting | Value |
 |---|---|---|
 | Cloudflare dashboard | Build command | `./build.sh` |
+| Cloudflare dashboard | Version command for branch previews | `./build.sh && npx wrangler versions upload` |
 | Cloudflare dashboard | Root directory | `/` |
 | `wrangler.jsonc`, in this repo | `assets.directory` | `./_site` |
 
@@ -270,9 +271,13 @@ setup wizard when it finds no config, and a build has nobody to answer it, so it
 accepts the default `assets.directory = "."` and publishes the repository root —
 `.git/` and `tests/` included — to the public site. That is not hypothetical;
 it happened here, and `.git/config` was readable on the live site until it was
-fixed. `wrangler versions upload`, which Cloudflare runs for non-production
-branches, has no such fallback and simply fails, which is why failing branch
-builds were the first symptom of an already-leaking `main`.
+fixed.
+
+Cloudflare's branch-preview command runs separately from the production build
+command. It must stage `_site/` before Wrangler uploads the preview version.
+The **Version command** in the Cloudflare dashboard is set to
+`./build.sh && npx wrangler versions upload`; without the staging step,
+Wrangler fails because the configured assets directory does not exist.
 
 `build.sh` copies `index.html`, `assets/`, the README and the licence into
 `_site/`. There is no compile step — it exists only so that the test harness
